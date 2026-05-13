@@ -2,10 +2,10 @@
 
 Claude Code Pro/Team plan usage in your terminal statusline and macOS menu bar.
 
-```
-13% ← native menu bar app (no extra dependencies)
+![screenshot](docs/screenshot.png)
 
-5h:13%  7d:63% ← in your Claude Code terminal
+```
+5h:17%  7d:63% ← in your Claude Code terminal
 ```
 
 ---
