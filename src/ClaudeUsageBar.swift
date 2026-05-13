@@ -57,7 +57,14 @@ func ansiForPct(_ pct: Double) -> String {
 }
 
 func pctText(_ limit: Limit) -> String {
-    "\(Int(limit.usedPercentage))"
+    "\(effectiveUsedPercentage(limit))"
+}
+
+func effectiveUsedPercentage(_ limit: Limit, now: Int = Int(Date().timeIntervalSince1970)) -> Int {
+    if let resetsAt = limit.resetsAt, resetsAt <= now {
+        return 0
+    }
+    return Int(limit.usedPercentage)
 }
 
 func renderStatusLine() {
@@ -240,21 +247,21 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let sds   = state.rateLimits?.sevenDaySonnet
 
         if let f = fh {
-            statusItem.button?.title = " \(Int(f.usedPercentage))%\(stale)"
+            statusItem.button?.title = " \(effectiveUsedPercentage(f, now: now))%\(stale)"
         } else {
             statusItem.button?.title = " --\(stale)"
         }
 
         if let f = fh {
-            m.addRow(l.session, value: "\(Int(f.usedPercentage))%", symbol: "clock")
+            m.addRow(l.session, value: "\(effectiveUsedPercentage(f, now: now))%", symbol: "clock")
             if let ts = f.resetsAt { m.addPlain("\(l.resets) \(fmt(ts))", size: 11, gray: true) }
         }
         if let s = sd {
-            m.addRow(l.weekly, value: "\(Int(s.usedPercentage))%", symbol: "calendar")
+            m.addRow(l.weekly, value: "\(effectiveUsedPercentage(s, now: now))%", symbol: "calendar")
             if let ts = s.resetsAt { m.addPlain("\(l.resets) \(fmt(ts))", size: 11, gray: true) }
         }
         if let ss = sds {
-            m.addRow(l.weeklySonnet, value: "\(Int(ss.usedPercentage))%", symbol: "sparkles")
+            m.addRow(l.weeklySonnet, value: "\(effectiveUsedPercentage(ss, now: now))%", symbol: "sparkles")
         }
 
         m.addItem(.separator())
