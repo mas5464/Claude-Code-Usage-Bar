@@ -44,7 +44,7 @@ struct L {
 }
 
 // MARK: — App Delegate
-class AppDelegate: NSObject, NSApplicationDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var statusItem: NSStatusItem!
     var timer: Timer?
     let stateFile = NSHomeDirectory() + "/.claude/.claude-usage-state.json"
@@ -68,9 +68,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    func menuNeedsUpdate(_ menu: NSMenu) { update() }
+
     func update() {
         let l = L.detect()
         let m = NSMenu()
+        m.delegate = self
 
         m.addHeader(l.heading)
         m.addItem(.separator())
