@@ -45,7 +45,7 @@ Open the app once. On first launch it configures Claude Code automatically by ad
 }
 ```
 
-Restart Claude Code, then send any message. The terminal badge appears after the first response, and the menu bar app updates from the same data.
+Restart Claude Code, then send any message. The command runs silently and updates the menu bar app from Claude Code's usage data.
 
 If you already have a custom Claude Code `statusLine`, the app will not overwrite it.
 
@@ -64,14 +64,12 @@ Add the app to Login Items so it launches automatically:
 ## How it works
 
 ```
-Claude Code → JSON via stdin → ClaudeUsageBar --statusline ──→ ANSI badge (terminal)
-                                                    │
-                                                    └──→ ~/.claude/.claude-usage-state.json
+Claude Code → JSON via stdin → ClaudeUsageBar --statusline ──→ ~/.claude/.claude-usage-state.json
                                                                       │
                                                    ClaudeUsageBar.app ──→ menu bar
 ```
 
-After each message, Claude Code passes usage data to the app's `--statusline` mode. It formats the terminal badge and writes a state file. The menu bar app reads that file every 60 seconds.
+After each message, Claude Code passes usage data to the app's `--statusline` mode. It writes a state file without printing anything in the terminal. The menu bar app reads that file every 60 seconds.
 
 ---
 
@@ -93,8 +91,8 @@ If you already have a custom `statusLine` script, the app won't overwrite it. Ad
 # claude-usage-bar usage badges
 USAGE_BAR="/Applications/ClaudeUsageBar.app/Contents/MacOS/ClaudeUsageBar"
 if [ -x "$USAGE_BAR" ]; then
-  usage_out=$(cat | "$USAGE_BAR" --statusline)
-  printf '%s  %s\n' "$your_existing_output" "$usage_out"
+  cat | "$USAGE_BAR" --statusline >/dev/null
+  printf '%s\n' "$your_existing_output"
 fi
 ```
 

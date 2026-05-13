@@ -104,7 +104,7 @@ func renderStatusLine() {
     }
 
     let output = ([prefix] + parts).filter { !$0.isEmpty }.joined(separator: "  ")
-    if !output.isEmpty {
+    if ProcessInfo.processInfo.environment["CLAUDE_USAGE_BAR_PRINT_STATUSLINE"] == "1", !output.isEmpty {
         print(output)
     }
 
