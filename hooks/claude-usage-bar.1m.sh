@@ -44,12 +44,6 @@ SEVEN_D=$("$JQ" -r '.rate_limits.seven_day.used_percentage          // "?"' "$ST
 SEVEN_D_RESET=$("$JQ" -r '.rate_limits.seven_day.resets_at          // 0'   "$STATE_FILE" 2>/dev/null)
 SEVEN_DS=$("$JQ" -r '.rate_limits.seven_day_sonnet.used_percentage  // "?"' "$STATE_FILE" 2>/dev/null)
 
-# ── Dominant metric (highest = most constrained) ─────────────────────────────
-MAX_PCT="$FIVE_H"
-if [ "$SEVEN_D" != "?" ] && [ "$SEVEN_D" -gt "${MAX_PCT:-0}" ] 2>/dev/null; then
-  MAX_PCT="$SEVEN_D"
-fi
-
 # ── Format reset timestamps ───────────────────────────────────────────────────
 fmt_reset() {
   local ts="$1"
@@ -62,8 +56,8 @@ SEVEN_D_RESET_FMT=$(fmt_reset "$SEVEN_D_RESET")
 UPDATED_FMT=$(fmt_reset "$UPDATED_AT")
 
 # ── Menu bar output ──────────────────────────────────────────────────────────
-# Title: plain text, no color, blends with system items
-echo "${MAX_PCT}%${STALE} | templateImage=$ICON_B64"
+TITLE_PCT="${FIVE_H:-?}"
+echo "${TITLE_PCT}%${STALE} | templateImage=$ICON_B64"
 
 echo "---"
 echo "Claude Code | size=13 color=gray"
