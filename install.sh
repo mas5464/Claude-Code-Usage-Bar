@@ -108,8 +108,19 @@ fi
 
 # ── Build and launch native menu bar app ────────────────────────────────────
 echo ""
-echo "Building ClaudeUsageBar.app ..."
 
+if [ "${SKIP_BUILD:-0}" = "1" ]; then
+  echo "SKIP_BUILD=1 — skipping app build."
+  if [ -d "$APP_DEST" ]; then
+    pkill -x ClaudeUsageBar 2>/dev/null || true
+    open "$APP_DEST"
+    echo "  ✓ Launched existing $APP_DEST"
+  else
+    echo "  ⚠  $APP_DEST not found. Download from:"
+    echo "  https://github.com/ChrisPiz/claude-usage-bar/releases/latest"
+  fi
+else
+echo "Building ClaudeUsageBar.app ..."
 if ! command -v swiftc &>/dev/null; then
   echo "  ⚠  swiftc not found — skipping native app build."
   echo "  Install Xcode Command Line Tools:  xcode-select --install"
@@ -160,6 +171,7 @@ PLIST
   echo "  ✓ ClaudeUsageBar.app built and launched → $APP_DEST"
   echo "  ℹ  Add to Login Items: System Settings → General → Login Items"
 fi
+fi  # end SKIP_BUILD check
 
 # ── Install SwiftBar plugin (optional) ──────────────────────────────────────
 PLUGIN_SRC="$HOOKS_DEST/claude-usage-bar.1m.sh"

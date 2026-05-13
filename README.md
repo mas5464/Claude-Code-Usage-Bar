@@ -30,11 +30,17 @@ The menu bar icon auto-tints for light/dark mode and the interface uses your mac
 
 ---
 
-## Quick install
+## Install
+
+### Option A — One-liner (recommended)
+
+Compiles the app locally — no Gatekeeper issues, no extra permissions needed.
 
 ```bash
 bash <(curl -s https://raw.githubusercontent.com/ChrisPiz/claude-usage-bar/main/install.sh)
 ```
+
+Requires: `jq` + Xcode Command Line Tools (`xcode-select --install`, already present on most Macs).
 
 The installer:
 1. Copies scripts to `~/.claude/hooks/`
@@ -42,6 +48,28 @@ The installer:
 3. Compiles and launches `ClaudeUsageBar.app` in `~/Applications/`
 
 Then send any message in Claude Code — the badges appear after the first response.
+
+### Option B — Pre-built binary
+
+Download `ClaudeUsageBar.zip` from the [latest release](https://github.com/ChrisPiz/claude-usage-bar/releases/latest), unzip, move to `~/Applications/`, then:
+
+```bash
+# Remove Gatekeeper quarantine (required for unsigned apps downloaded from the web)
+xattr -cr ~/Applications/ClaudeUsageBar.app
+open ~/Applications/ClaudeUsageBar.app
+```
+
+You still need the hook script for the terminal badge and state file:
+
+```bash
+bash <(curl -s https://raw.githubusercontent.com/ChrisPiz/claude-usage-bar/main/install.sh)
+```
+
+Run it with `SKIP_BUILD=1` to skip the compile step if you already have the app:
+
+```bash
+SKIP_BUILD=1 bash <(curl -s https://raw.githubusercontent.com/ChrisPiz/claude-usage-bar/main/install.sh)
+```
 
 ---
 
