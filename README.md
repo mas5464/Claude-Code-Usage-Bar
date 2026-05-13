@@ -3,9 +3,9 @@
 Claude Code Pro/Team plan usage in your terminal statusline and macOS menu bar.
 
 ```
-🟠 63% ← in your menu bar
+13% ← native menu bar app (no extra dependencies)
 
-5h:6%  7d:63%  7d♦:22% ← in your Claude Code terminal
+5h:13%  7d:63% ← in your Claude Code terminal
 ```
 
 ---
@@ -13,18 +13,20 @@ Claude Code Pro/Team plan usage in your terminal statusline and macOS menu bar.
 ## What it does
 
 - **Terminal badge** — colored usage indicators in the Claude Code statusline after each message
-- **Menu bar indicator** — live percentage in the macOS menu bar with a click-to-expand breakdown and reset times
+- **Menu bar app** — native macOS menu bar app, live percentage with click-to-expand breakdown and reset times
 
 Colors: 🟢 green `< 70%` · 🟠 orange `70–90%` · 🔴 red `≥ 90%`
+
+The menu bar icon auto-tints for light/dark mode and the interface uses your macOS system language.
 
 ---
 
 ## Requirements
 
-- macOS
+- macOS 13+
 - [Claude Code](https://claude.ai/code) with a Pro or Team subscription
 - `jq` — likely already installed (`which jq`), otherwise: `brew install jq`
-- [SwiftBar](https://swiftbar.app) or [xbar](https://xbarapp.com) — for the menu bar indicator *(optional)*
+- Xcode Command Line Tools — likely already installed (`xcode-select -p`), otherwise: `xcode-select --install`
 
 ---
 
@@ -37,26 +39,17 @@ bash <(curl -s https://raw.githubusercontent.com/ChrisPiz/claude-usage-bar/main/
 The installer:
 1. Copies scripts to `~/.claude/hooks/`
 2. Adds `statusLine` to `~/.claude/settings.json`
-3. Installs the menu bar plugin if SwiftBar or xbar is found
+3. Compiles and launches `ClaudeUsageBar.app` in `~/Applications/`
 
 Then send any message in Claude Code — the badges appear after the first response.
 
 ---
 
-## Menu bar setup (if not auto-installed)
+## Auto-start on login
 
-Install SwiftBar:
-```bash
-brew install --cask swiftbar
-```
+Add the app to Login Items so it launches automatically:
 
-Create a visible plugins folder and copy the plugin:
-```bash
-mkdir -p ~/Documents/SwiftBar
-cp ~/.claude/hooks/claude-usage-bar.1m.sh ~/Documents/SwiftBar/
-```
-
-Open SwiftBar and point it to `~/Documents/SwiftBar` when it asks for the plugins folder. The menu bar icon appears within 1 minute.
+**System Settings → General → Login Items → +** → select `~/Applications/ClaudeUsageBar.app`
 
 ---
 
@@ -67,10 +60,10 @@ Claude Code → JSON via stdin → usage-statusline.sh ──→ ANSI badge (ter
                                         │
                                         └──→ ~/.claude/.claude-usage-state.json
                                                           │
-                                       claude-usage-bar.1m.sh ──→ menu bar
+                                       ClaudeUsageBar.app ──→ menu bar
 ```
 
-After each message, Claude Code passes usage data to the `statusLine` script. That script formats the terminal badge and writes a state file. The menu bar plugin reads that file every minute.
+After each message, Claude Code passes usage data to the `statusLine` script. That script formats the terminal badge and writes a state file. The menu bar app reads that file every 60 seconds.
 
 ---
 
@@ -79,7 +72,7 @@ After each message, Claude Code passes usage data to the `statusLine` script. Th
 If you use the [caveman](https://github.com/superpowers/caveman) Claude Code plugin, the caveman mode badge is automatically included in the statusline — no extra configuration needed.
 
 ```
-[CAVEMAN:ULTRA]  5h:6%  7d:63%
+[CAVEMAN:ULTRA]  5h:13%  7d:63%
 ```
 
 ---
@@ -93,9 +86,20 @@ If you already have a custom `statusLine` script, the installer won't overwrite 
 USAGE_HOOK="$HOME/.claude/hooks/usage-statusline.sh"
 if [ -f "$USAGE_HOOK" ]; then
   usage_out=$(cat | "$USAGE_HOOK")
-  # Combine with your existing output
   printf '%s  %s\n' "$your_existing_output" "$usage_out"
 fi
+```
+
+---
+
+## SwiftBar / xbar (optional)
+
+If you already use [SwiftBar](https://swiftbar.app) or [xbar](https://xbarapp.com), the installer also drops the plugin in your plugins folder automatically. Both the native app and the SwiftBar plugin can coexist.
+
+Manual SwiftBar setup:
+```bash
+mkdir -p ~/Documents/SwiftBar
+cp ~/.claude/hooks/claude-usage-bar.1m.sh ~/Documents/SwiftBar/
 ```
 
 ---

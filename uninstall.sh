@@ -53,8 +53,16 @@ if [ -f "$SETTINGS" ]; then
   fi
 fi
 
-# ── Remove menu bar plugin ────────────────────────────────────────────────────
-for dir in "$SWIFTBAR_DIR" "$XBAR_DIR"; do
+# ── Kill and remove native app ────────────────────────────────────────────────
+APP_DEST="$HOME/Applications/ClaudeUsageBar.app"
+pkill -x ClaudeUsageBar 2>/dev/null && echo "  ✓ Stopped ClaudeUsageBar" || true
+if [ -d "$APP_DEST" ]; then
+  rm -rf "$APP_DEST"
+  echo "  ✓ Removed $APP_DEST"
+fi
+
+# ── Remove SwiftBar/xbar plugin ───────────────────────────────────────────────
+for dir in "$SWIFTBAR_DIR" "$XBAR_DIR" "$HOME/Documents/SwiftBar"; do
   if [ -f "$dir/claude-usage-bar.1m.sh" ]; then
     rm "$dir/claude-usage-bar.1m.sh"
     echo "  ✓ Removed plugin from $dir"
