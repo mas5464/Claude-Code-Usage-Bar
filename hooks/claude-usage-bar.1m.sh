@@ -110,11 +110,15 @@ else
 fi
 
 # ── Extract values ───────────────────────────────────────────────────────────
-FIVE_H=$("$JQ"  -r '.rate_limits.five_hour.used_percentage         // "?"' "$STATE_FILE" 2>/dev/null)
-FIVE_H_RESET=$("$JQ" -r '.rate_limits.five_hour.resets_at          // 0'   "$STATE_FILE" 2>/dev/null)
-SEVEN_D=$("$JQ" -r '.rate_limits.seven_day.used_percentage          // "?"' "$STATE_FILE" 2>/dev/null)
-SEVEN_D_RESET=$("$JQ" -r '.rate_limits.seven_day.resets_at          // 0'   "$STATE_FILE" 2>/dev/null)
-SEVEN_DS=$("$JQ" -r '.rate_limits.seven_day_sonnet.used_percentage  // "?"' "$STATE_FILE" 2>/dev/null)
+jq_int() {
+  "$JQ" -r "($1) | if . != null then floor | tostring else \"?\" end" "$STATE_FILE" 2>/dev/null || echo "?"
+}
+
+FIVE_H=$(jq_int '.rate_limits.five_hour.used_percentage')
+FIVE_H_RESET=$("$JQ" -r '.rate_limits.five_hour.resets_at   // 0' "$STATE_FILE" 2>/dev/null)
+SEVEN_D=$(jq_int '.rate_limits.seven_day.used_percentage')
+SEVEN_D_RESET=$("$JQ" -r '.rate_limits.seven_day.resets_at  // 0' "$STATE_FILE" 2>/dev/null)
+SEVEN_DS=$(jq_int '.rate_limits.seven_day_sonnet.used_percentage')
 
 # ── Format reset timestamps ───────────────────────────────────────────────────
 fmt_reset() {
