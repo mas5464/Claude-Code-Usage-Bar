@@ -66,22 +66,22 @@ echo "---"
 # 5-hour session window
 if [ "$FIVE_H" != "?" ]; then
   echo "Session (5h)    ${FIVE_H}% | size=14 refresh=true"
-  echo "Resets ${FIVE_H_RESET_FMT} | size=11 color=gray"
+  echo "Resets ${FIVE_H_RESET_FMT} | size=11 refresh=true"
 fi
 
 # 7-day all models
 if [ "$SEVEN_D" != "?" ]; then
   echo "Weekly (all)    ${SEVEN_D}% | size=14 refresh=true"
-  echo "Resets ${SEVEN_D_RESET_FMT} | size=11 color=gray"
+  echo "Resets ${SEVEN_D_RESET_FMT} | size=11 refresh=true"
 fi
 
 # 7-day Sonnet
 if [ "$SEVEN_DS" != "?" ]; then
   echo "Weekly (Sonnet) ${SEVEN_DS}% | size=14 refresh=true"
-  echo "Resets ${SEVEN_D_RESET_FMT} | size=11 color=gray"
+  echo "Resets ${SEVEN_D_RESET_FMT} | size=11 refresh=true"
 fi
 
 echo "---"
-echo "Updated ${UPDATED_FMT} | size=11 color=gray"
+echo "Updated ${UPDATED_FMT} | size=11 refresh=true"
 echo "---"
 echo "Refresh | refresh=true"
