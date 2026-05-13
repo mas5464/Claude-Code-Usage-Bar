@@ -1,4 +1,4 @@
-Claude Code Pro/Team plan usage in your terminal statusline and macOS menu bar.
+Claude Code plan usage in your terminal statusline and macOS menu bar.
 
 ![screenshot](docs/screenshot.png)
 
