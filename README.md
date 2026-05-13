@@ -6,12 +6,9 @@ Independent project. Not affiliated with, endorsed by, or sponsored by Anthropic
 
 ## What it does
 
-- **Menu bar app** — native macOS menu bar app with live percentage, click-to-expand breakdown, and reset times
-- **Silent Claude Code integration** — reads Claude Code usage data after each message without adding text to your terminal
+ClaudeUsageBar shows your Claude Code usage in the macOS menu bar, including the current session, weekly usage, and reset times.
 
-Colors: 🟢 green `< 70%` · 🟠 orange `70–90%` · 🔴 red `≥ 90%`
-
-The menu bar icon auto-tints for light/dark mode and the interface uses your macOS system language.
+Open it once, keep it in the menu bar, and check your usage without opening Claude settings.
 
 ---
 
@@ -28,18 +25,9 @@ The menu bar icon auto-tints for light/dark mode and the interface uses your mac
 
 Download `ClaudeUsageBar.dmg` from the [latest release](https://github.com/ChrisPiz/Claude-Code-Usage-Bar/releases/latest), open it, and drag `ClaudeUsageBar.app` to `Applications`.
 
-Open the app once. On first launch it configures Claude Code automatically by adding this statusline command to `~/.claude/settings.json`:
+Open the app once. It configures Claude Code automatically.
 
-```json
-{
-  "statusLine": {
-    "type": "command",
-    "command": "\"/Applications/ClaudeUsageBar.app/Contents/MacOS/ClaudeUsageBar\" --statusline"
-  }
-}
-```
-
-Restart Claude Code, then send any message. The command runs silently and updates the menu bar app from Claude Code's usage data.
+Restart Claude Code, then send any message. The menu bar percentage updates after Claude Code returns usage data.
 
 If you already have a custom Claude Code `statusLine`, the app will not overwrite it.
 
@@ -55,25 +43,7 @@ Add the app to Login Items so it launches automatically:
 
 ---
 
-## How it works
-
-```
-Claude Code → JSON via stdin → ClaudeUsageBar --statusline ──→ ~/.claude/.claude-usage-state.json
-                                                                      │
-                                                   ClaudeUsageBar.app ──→ menu bar
-```
-
-After each message, Claude Code passes usage data to the app's `--statusline` mode. It writes a state file without printing anything in the terminal. The menu bar app reads that file every 60 seconds.
-
----
-
-## Caveman compatibility
-
-If you use the [caveman](https://github.com/superpowers/caveman) Claude Code plugin, ClaudeUsageBar leaves your existing statusline alone when it detects a custom configuration.
-
----
-
-## Custom statusline integration
+## Advanced
 
 If you already have a custom `statusLine` script, the app won't overwrite it. Add this snippet to your existing script:
 
