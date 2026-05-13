@@ -1,19 +1,13 @@
-Claude Code plan usage in your terminal statusline and macOS menu bar.
+Claude Code plan usage in your macOS menu bar.
 
 Independent project. Not affiliated with, endorsed by, or sponsored by Anthropic, Claude, or Claude Code.
 
 ![screenshot](docs/screenshot.png)
 
-```
-5h:17%  7d:63% ← in your Claude Code terminal
-```
-
----
-
 ## What it does
 
-- **Terminal badge** — colored usage indicators in the Claude Code statusline after each message
-- **Menu bar app** — native macOS menu bar app, live percentage with click-to-expand breakdown and reset times
+- **Menu bar app** — native macOS menu bar app with live percentage, click-to-expand breakdown, and reset times
+- **Silent Claude Code integration** — reads Claude Code usage data after each message without adding text to your terminal
 
 Colors: 🟢 green `< 70%` · 🟠 orange `70–90%` · 🔴 red `≥ 90%`
 
@@ -75,11 +69,7 @@ After each message, Claude Code passes usage data to the app's `--statusline` mo
 
 ## Caveman compatibility
 
-If you use the [caveman](https://github.com/superpowers/caveman) Claude Code plugin, the caveman mode badge is automatically included in the statusline — no extra configuration needed.
-
-```
-[CAVEMAN:ULTRA]  5h:13%  7d:63%
-```
+If you use the [caveman](https://github.com/superpowers/caveman) Claude Code plugin, ClaudeUsageBar leaves your existing statusline alone when it detects a custom configuration.
 
 ---
 
@@ -88,7 +78,7 @@ If you use the [caveman](https://github.com/superpowers/caveman) Claude Code plu
 If you already have a custom `statusLine` script, the app won't overwrite it. Add this snippet to your existing script:
 
 ```bash
-# claude-usage-bar usage badges
+# claude-usage-bar state update
 USAGE_BAR="/Applications/ClaudeUsageBar.app/Contents/MacOS/ClaudeUsageBar"
 if [ -x "$USAGE_BAR" ]; then
   cat | "$USAGE_BAR" --statusline >/dev/null
