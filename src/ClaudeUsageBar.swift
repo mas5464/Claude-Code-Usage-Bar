@@ -45,6 +45,7 @@ enum SetupStatus {
 let appName = "ClaudeUsageBar"
 let homeDirectoryPath = ProcessInfo.processInfo.environment["HOME"] ?? NSHomeDirectory()
 let stateFilePath = homeDirectoryPath + "/.claude/.claude-usage-state.json"
+let claudeCodeIconColor = NSColor(calibratedRed: 217.0 / 255.0, green: 119.0 / 255.0, blue: 87.0 / 255.0, alpha: 1.0)
 
 func shellQuoted(_ value: String) -> String {
     "\"\(value.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\""))\""
@@ -174,6 +175,74 @@ func configureClaudeStatusLine() -> SetupStatus {
     }
 }
 
+func makeClaudeCodeIconPath() -> NSBezierPath {
+    let path = NSBezierPath()
+    path.windingRule = .evenOdd
+
+    path.move(to: NSPoint(x: 20.998, y: 10.949))
+    path.line(to: NSPoint(x: 24.0, y: 10.949))
+    path.line(to: NSPoint(x: 24.0, y: 14.051))
+    path.line(to: NSPoint(x: 21.0, y: 14.051))
+    path.line(to: NSPoint(x: 21.0, y: 17.079))
+    path.line(to: NSPoint(x: 19.513, y: 17.079))
+    path.line(to: NSPoint(x: 19.513, y: 20.0))
+    path.line(to: NSPoint(x: 18.0, y: 20.0))
+    path.line(to: NSPoint(x: 18.0, y: 17.079))
+    path.line(to: NSPoint(x: 16.513, y: 17.079))
+    path.line(to: NSPoint(x: 16.513, y: 20.0))
+    path.line(to: NSPoint(x: 15.0, y: 20.0))
+    path.line(to: NSPoint(x: 15.0, y: 17.079))
+    path.line(to: NSPoint(x: 9.0, y: 17.079))
+    path.line(to: NSPoint(x: 9.0, y: 20.0))
+    path.line(to: NSPoint(x: 7.488, y: 20.0))
+    path.line(to: NSPoint(x: 7.488, y: 17.079))
+    path.line(to: NSPoint(x: 6.0, y: 17.079))
+    path.line(to: NSPoint(x: 6.0, y: 20.0))
+    path.line(to: NSPoint(x: 4.487, y: 20.0))
+    path.line(to: NSPoint(x: 4.487, y: 17.079))
+    path.line(to: NSPoint(x: 3.0, y: 17.079))
+    path.line(to: NSPoint(x: 3.0, y: 14.05))
+    path.line(to: NSPoint(x: 0.0, y: 14.05))
+    path.line(to: NSPoint(x: 0.0, y: 10.95))
+    path.line(to: NSPoint(x: 3.0, y: 10.95))
+    path.line(to: NSPoint(x: 3.0, y: 5.0))
+    path.line(to: NSPoint(x: 20.998, y: 5.0))
+    path.close()
+
+    path.move(to: NSPoint(x: 6.0, y: 10.949))
+    path.line(to: NSPoint(x: 7.488, y: 10.949))
+    path.line(to: NSPoint(x: 7.488, y: 8.102))
+    path.line(to: NSPoint(x: 6.0, y: 8.102))
+    path.close()
+
+    path.move(to: NSPoint(x: 16.51, y: 10.949))
+    path.line(to: NSPoint(x: 18.0, y: 10.949))
+    path.line(to: NSPoint(x: 18.0, y: 8.102))
+    path.line(to: NSPoint(x: 16.51, y: 8.102))
+    path.close()
+
+    return path
+}
+
+func makeClaudeCodeIcon(size: CGFloat, template: Bool = false) -> NSImage {
+    let image = NSImage(size: NSSize(width: size, height: size), flipped: false) { rect in
+        NSGraphicsContext.saveGraphicsState()
+        guard let context = NSGraphicsContext.current?.cgContext else {
+            NSGraphicsContext.restoreGraphicsState()
+            return false
+        }
+
+        context.translateBy(x: rect.minX, y: rect.minY + rect.height)
+        context.scaleBy(x: rect.width / 24.0, y: -rect.height / 24.0)
+        claudeCodeIconColor.setFill()
+        makeClaudeCodeIconPath().fill()
+        NSGraphicsContext.restoreGraphicsState()
+        return true
+    }
+    image.isTemplate = template
+    return image
+}
+
 // MARK: — i18n
 struct L {
     let heading, session, weekly, weeklySonnet, resets, updated, refresh, close, noData, noDataSub, stale: String
@@ -196,19 +265,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var setupStatus: SetupStatus = .failed
     var aboutWindow: NSWindow?
     let stateFile = stateFilePath
-    let iconB64 = "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"
 
     func applicationDidFinishLaunching(_ n: Notification) {
         setupStatus = configureClaudeStatusLine()
         NSApp.setActivationPolicy(.accessory)
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let btn = statusItem.button {
-            if let data = Data(base64Encoded: iconB64), let img = NSImage(data: data) {
-                img.isTemplate = true
-                img.size = NSSize(width: 18, height: 18)
-                btn.image = img
-                btn.imagePosition = .imageLeft
-            }
+            btn.image = makeClaudeCodeIcon(size: 18)
+            btn.imagePosition = .imageLeft
             btn.title = " --"
         }
         update()
@@ -305,13 +369,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         content.wantsLayer = true
         content.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
 
-        if let data = Data(base64Encoded: iconB64), let image = NSImage(data: data) {
-            image.size = NSSize(width: 128, height: 128)
-            let iconView = NSImageView(frame: NSRect(x: 54, y: 78, width: 128, height: 128))
-            iconView.image = image
-            iconView.imageScaling = .scaleProportionallyUpOrDown
-            content.addSubview(iconView)
-        }
+        let iconView = NSImageView(frame: NSRect(x: 54, y: 78, width: 128, height: 128))
+        iconView.image = makeClaudeCodeIcon(size: 128)
+        iconView.imageScaling = .scaleProportionallyUpOrDown
+        content.addSubview(iconView)
 
         let title = NSTextField(labelWithString: "ClaudeUsageBar")
         title.font = .systemFont(ofSize: 40, weight: .regular)
