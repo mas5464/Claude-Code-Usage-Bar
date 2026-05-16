@@ -342,12 +342,39 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
 
     func update() {
         let l = L.detect()
+        if let btn = statusItem.button {
+            btn.image = (claudeStatus?.hasIssue == true)
+                ? makeStatusBadgedIcon(size: 18)
+                : makeClaudeCodeIcon(size: 18)
+        }
         let m = NSMenu()
         m.delegate = self
 
         m.addHeader(l.heading)
         m.addItem(.separator())
         addSetupStatus(to: m)
+
+        // Status section
+        m.addHeader(l.statusHeading)
+        if let cs = claudeStatus {
+            for comp in cs.components {
+                m.addStatusRow(comp.name, status: comp.status,
+                               operational: l.operational,
+                               degraded: l.degraded,
+                               outage: l.outage)
+            }
+            for incident in cs.incidents {
+                m.addPlain("↳ \(incident.name)", size: 11, gray: true, indent: 30)
+            }
+        } else {
+            m.addPlain(l.statusLoading, size: 11, gray: true)
+        }
+        let alertsOn = UserDefaults.standard.object(forKey: "statusAlertsEnabled") as? Bool ?? true
+        let alertsItem = NSMenuItem(title: l.alertsToggle, action: #selector(toggleAlerts), keyEquivalent: "")
+        alertsItem.target = self
+        alertsItem.state = alertsOn ? .on : .off
+        m.addItem(alertsItem)
+        m.addItem(.separator())
 
         guard let raw   = FileManager.default.contents(atPath: stateFile),
               let state = try? JSONDecoder().decode(UsageState.self, from: raw) else {
@@ -591,6 +618,53 @@ extension NSMenu {
         val.textColor = .labelColor
         val.alignment = .right
         val.frame = NSRect(x: 190, y: 2, width: 46, height: 18)
+        view.addSubview(val)
+
+        item.view = view
+        addItem(item)
+    }
+
+    func addStatusRow(_ label: String, status: String, operational: String, degraded: String, outage: String) {
+        let item = NSMenuItem()
+        let view = NSView(frame: NSRect(x: 0, y: 0, width: 250, height: 22))
+
+        let (symName, color): (String, NSColor)
+        switch status {
+        case "operational":
+            symName = "checkmark.circle"; color = .systemGreen
+        case "degraded_performance":
+            symName = "exclamationmark.triangle"; color = .systemYellow
+        default:
+            symName = "xmark.circle"; color = .systemRed
+        }
+
+        let statusText: String
+        switch status {
+        case "operational":         statusText = operational
+        case "degraded_performance": statusText = degraded
+        default:                    statusText = outage
+        }
+
+        if let img = NSImage(systemSymbolName: symName, accessibilityDescription: nil) {
+            let cfg = NSImage.SymbolConfiguration(pointSize: 13, weight: .regular)
+            let colored = img.withSymbolConfiguration(cfg)
+            let iv = NSImageView(frame: NSRect(x: 8, y: 3, width: 16, height: 16))
+            iv.image = colored
+            iv.contentTintColor = color
+            view.addSubview(iv)
+        }
+
+        let lbl = NSTextField(labelWithString: label)
+        lbl.font = .systemFont(ofSize: 13)
+        lbl.textColor = .labelColor
+        lbl.frame = NSRect(x: 30, y: 2, width: 140, height: 18)
+        view.addSubview(lbl)
+
+        let val = NSTextField(labelWithString: statusText)
+        val.font = .systemFont(ofSize: 13)
+        val.textColor = .secondaryLabelColor
+        val.alignment = .right
+        val.frame = NSRect(x: 170, y: 2, width: 66, height: 18)
         view.addSubview(val)
 
         item.view = view
