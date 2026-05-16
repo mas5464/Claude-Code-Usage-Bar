@@ -61,11 +61,11 @@ cat > "$APP_DEST/Contents/Info.plist" << 'PLIST'
 <dict>
   <key>CFBundleName</key>           <string>ClaudeUsageBar</string>
   <key>CFBundleIdentifier</key>     <string>com.chrispiz.claude-usage-bar</string>
-  <key>CFBundleVersion</key>        <string>1.0</string>
+  <key>CFBundleVersion</key>        <string>1.1</string>
   <key>CFBundleExecutable</key>     <string>ClaudeUsageBar</string>
   <key>CFBundleIconFile</key>       <string>ClaudeUsageBar</string>
   <key>CFBundlePackageType</key>    <string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>1.0</string>
+  <key>CFBundleShortVersionString</key><string>1.1</string>
   <key>LSUIElement</key>            <true/>
   <key>NSHighResolutionCapable</key><true/>
   <key>LSMinimumSystemVersion</key> <string>13.0</string>
