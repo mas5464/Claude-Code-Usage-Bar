@@ -439,9 +439,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
     func relativeReset(_ ts: Int, now: Int, l: L) -> String {
         let diff = ts - now
         guard diff > 0 else { return "" }
-        let hours = diff / 3600
+        let days  = diff / 86400
+        let hours = (diff % 86400) / 3600
         let mins  = (diff % 3600) / 60
-        return hours > 0 ? "\(l.resetsIn) \(hours) h \(mins) min" : "\(l.resetsIn) \(mins) min"
+        if days > 0  { return "\(l.resetsIn) \(days) d \(hours) h" }
+        if hours > 0 { return "\(l.resetsIn) \(hours) h \(mins) min" }
+        return "\(l.resetsIn) \(mins) min"
     }
 
     func fetchClaudeStatus() {
