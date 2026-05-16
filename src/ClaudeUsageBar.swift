@@ -318,7 +318,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
         NSApp.setActivationPolicy(.accessory)
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let btn = statusItem.button {
-            btn.image = makeClaudeCodeIcon(size: 18)
+            btn.image = makeClaudeCodeIcon(size: 18, template: true)
             btn.imagePosition = .imageLeft
             btn.title = " --"
         }
@@ -352,7 +352,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
         if let btn = statusItem.button {
             btn.image = (claudeStatus?.hasIssue == true)
                 ? makeStatusBadgedIcon(size: 18)
-                : makeClaudeCodeIcon(size: 18)
+                : makeClaudeCodeIcon(size: 18, template: true)
         }
         let m = NSMenu()
         m.delegate = self
@@ -446,6 +446,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
 
             let filtered = response.components.filter {
                 $0.name.contains("Claude Code") || $0.name.contains("Claude API")
+            }.map { comp -> StatusComponent in
+                let name = comp.name.components(separatedBy: " (").first ?? comp.name
+                return StatusComponent(id: comp.id, name: name, status: comp.status)
             }
             let active = response.incidents.filter { $0.status != "resolved" }
             let newStatus = ClaudeStatus(components: filtered, incidents: active, fetchedAt: Date())
