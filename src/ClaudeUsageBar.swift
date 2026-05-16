@@ -270,6 +270,20 @@ func makeClaudeCodeIcon(size: CGFloat, template: Bool = false) -> NSImage {
     return image
 }
 
+func makeStatusBadgedIcon(size: CGFloat) -> NSImage {
+    let base = makeClaudeCodeIcon(size: size)
+    let result = NSImage(size: NSSize(width: size, height: size), flipped: false) { rect in
+        base.draw(in: rect)
+        let dotSize: CGFloat = 6
+        let dotRect = NSRect(x: rect.maxX - dotSize, y: rect.maxY - dotSize,
+                             width: dotSize, height: dotSize)
+        NSColor.systemRed.setFill()
+        NSBezierPath(ovalIn: dotRect).fill()
+        return true
+    }
+    return result
+}
+
 // MARK: — i18n
 struct L {
     let heading, session, weekly, weeklySonnet, resets, updated, refresh, close, noData, noDataSub, stale: String
