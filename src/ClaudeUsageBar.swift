@@ -361,7 +361,43 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
         m.addItem(.separator())
         addSetupStatus(to: m)
 
-        // Status section
+        // Usage section (first)
+        if let raw   = FileManager.default.contents(atPath: stateFile),
+           let state = try? JSONDecoder().decode(UsageState.self, from: raw) {
+
+            let now   = Int(Date().timeIntervalSince1970)
+            let stale = (now - state.updatedAt) > 21600 ? l.stale : ""
+            let fh    = state.rateLimits?.fiveHour
+            let sd    = state.rateLimits?.sevenDay
+            let sds   = state.rateLimits?.sevenDaySonnet
+
+            if let f = fh {
+                statusItem.button?.title = " \(effectiveUsedPercentage(f, now: now))%\(stale)"
+            } else {
+                statusItem.button?.title = " --\(stale)"
+            }
+
+            if let f = fh {
+                m.addRow(l.session, value: "\(effectiveUsedPercentage(f, now: now))%", symbol: "clock")
+                if let ts = f.resetsAt { m.addPlain("\(l.resets) \(fmt(ts))", size: 11, gray: true) }
+            }
+            if let s = sd {
+                m.addRow(l.weekly, value: "\(effectiveUsedPercentage(s, now: now))%", symbol: "calendar")
+                if let ts = s.resetsAt { m.addPlain("\(l.resets) \(fmt(ts))", size: 11, gray: true) }
+            }
+            if let ss = sds {
+                m.addRow(l.weeklySonnet, value: "\(effectiveUsedPercentage(ss, now: now))%", symbol: "sparkles")
+            }
+            m.addItem(.separator())
+            m.addPlain("\(l.updated) \(fmt(state.updatedAt))", size: 11, gray: true)
+        } else {
+            statusItem.button?.title = " --"
+            m.addRow(l.noData, value: "—", symbol: "exclamationmark.circle")
+            m.addPlain(l.noDataSub, size: 11, gray: true)
+        }
+
+        // Status section (below usage)
+        m.addItem(.separator())
         m.addHeader(l.statusHeading)
         if let cs = claudeStatus {
             for comp in cs.components {
@@ -381,46 +417,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
         alertsItem.target = self
         alertsItem.state = alertsOn ? .on : .off
         m.addItem(alertsItem)
-        m.addItem(.separator())
 
-        guard let raw   = FileManager.default.contents(atPath: stateFile),
-              let state = try? JSONDecoder().decode(UsageState.self, from: raw) else {
-            statusItem.button?.title = " --"
-            m.addRow(l.noData, value: "—", symbol: "exclamationmark.circle")
-            m.addPlain(l.noDataSub, size: 11, gray: true)
-            m.addItem(.separator())
-            m.addPlain("About ClaudeUsageBar...", sel: #selector(showAbout), target: self)
-            m.addPlain(l.refresh, sel: #selector(doRefresh), target: self)
-            statusItem.menu = m
-            return
-        }
-
-        let now   = Int(Date().timeIntervalSince1970)
-        let stale = (now - state.updatedAt) > 21600 ? l.stale : ""
-        let fh    = state.rateLimits?.fiveHour
-        let sd    = state.rateLimits?.sevenDay
-        let sds   = state.rateLimits?.sevenDaySonnet
-
-        if let f = fh {
-            statusItem.button?.title = " \(effectiveUsedPercentage(f, now: now))%\(stale)"
-        } else {
-            statusItem.button?.title = " --\(stale)"
-        }
-
-        if let f = fh {
-            m.addRow(l.session, value: "\(effectiveUsedPercentage(f, now: now))%", symbol: "clock")
-            if let ts = f.resetsAt { m.addPlain("\(l.resets) \(fmt(ts))", size: 11, gray: true) }
-        }
-        if let s = sd {
-            m.addRow(l.weekly, value: "\(effectiveUsedPercentage(s, now: now))%", symbol: "calendar")
-            if let ts = s.resetsAt { m.addPlain("\(l.resets) \(fmt(ts))", size: 11, gray: true) }
-        }
-        if let ss = sds {
-            m.addRow(l.weeklySonnet, value: "\(effectiveUsedPercentage(ss, now: now))%", symbol: "sparkles")
-        }
-
-        m.addItem(.separator())
-        m.addPlain("\(l.updated) \(fmt(state.updatedAt))", size: 11, gray: true)
         m.addItem(.separator())
         m.addPlain("About ClaudeUsageBar...", sel: #selector(showAbout), target: self)
         m.addPlain(l.refresh, sel: #selector(doRefresh), target: self)
@@ -660,11 +657,12 @@ extension NSMenu {
 
         if let img = NSImage(systemSymbolName: symName, accessibilityDescription: nil) {
             let cfg = NSImage.SymbolConfiguration(pointSize: 13, weight: .regular)
-            let colored = img.withSymbolConfiguration(cfg)
-            let iv = NSImageView(frame: NSRect(x: 8, y: 3, width: 16, height: 16))
-            iv.image = colored
-            iv.contentTintColor = color
-            view.addSubview(iv)
+                .applying(NSImage.SymbolConfiguration(paletteColors: [color]))
+            if let colored = img.withSymbolConfiguration(cfg) {
+                let iv = NSImageView(frame: NSRect(x: 8, y: 3, width: 16, height: 16))
+                iv.image = colored
+                view.addSubview(iv)
+            }
         }
 
         let lbl = NSTextField(labelWithString: label)
