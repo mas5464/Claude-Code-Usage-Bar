@@ -1,5 +1,7 @@
 Claude Code usage and live system status in your macOS menu bar.
 
+> Available in English and Spanish / Disponible en inglés y español.
+
 ![screenshot](docs/screenshot.png)
 
 ## What it does
