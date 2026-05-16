@@ -424,6 +424,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
                     let content = UNMutableNotificationContent()
                     content.title = "Claude incident detected"
                     content.body = incident.name
+                    content.sound = .default
                     let req = UNNotificationRequest(
                         identifier: "claude-incident-\(incident.id)",
                         content: content,
@@ -432,7 +433,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
                     UNUserNotificationCenter.current().add(req, withCompletionHandler: nil)
                 }
             }
-            let allSeen = seen + unseen.map(\.id)
+            let activeIDs = active.map(\.id)
+            let allSeen = Array(Set(seen + unseen.map(\.id)).intersection(activeIDs))
             defaults.set(allSeen, forKey: "seenIncidentIDs")
 
             DispatchQueue.main.async {
