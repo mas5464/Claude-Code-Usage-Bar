@@ -1,10 +1,15 @@
-Claude Code plan usage in your macOS menu bar.
+Claude Code usage and live system status in your macOS menu bar.
 
 ![screenshot](docs/screenshot.png)
 
 ## What it does
 
-ClaudeUsageBar shows your Claude Code usage in the macOS menu bar, including the current session, weekly usage, and reset times.
+ClaudeUsageBar shows your Claude Code usage and the live Claude system status in the macOS menu bar.
+
+- **Usage** — current session (5h) and weekly limits with reset times
+- **System status** — live status for Claude Code and Claude API from status.claude.com, updated every 5 minutes
+- **Incident alerts** — macOS notifications when a new incident is detected (toggle in menu)
+- **Badge icon** — red dot on the menu bar icon when there is an active incident
 
 Open it once, keep it in the menu bar, and check your usage without opening Claude settings.
 
