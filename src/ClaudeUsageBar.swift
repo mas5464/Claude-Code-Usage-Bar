@@ -641,14 +641,11 @@ extension NSMenu {
         let item = NSMenuItem()
         let view = NSView(frame: NSRect(x: 0, y: 0, width: 250, height: 22))
 
-        let (symName, color): (String, NSColor)
+        let color: NSColor
         switch status {
-        case "operational":
-            symName = "checkmark.circle"; color = .systemGreen
-        case "degraded_performance":
-            symName = "exclamationmark.triangle"; color = .systemYellow
-        default:
-            symName = "xmark.circle"; color = .systemRed
+        case "operational":          color = .systemGreen
+        case "degraded_performance": color = .systemYellow
+        default:                     color = .systemRed
         }
 
         let statusText: String
@@ -658,15 +655,11 @@ extension NSMenu {
         default:                    statusText = outage
         }
 
-        if let img = NSImage(systemSymbolName: symName, accessibilityDescription: nil) {
-            let cfg = NSImage.SymbolConfiguration(pointSize: 13, weight: .regular)
-                .applying(NSImage.SymbolConfiguration(paletteColors: [color]))
-            if let colored = img.withSymbolConfiguration(cfg) {
-                let iv = NSImageView(frame: NSRect(x: 8, y: 3, width: 16, height: 16))
-                iv.image = colored
-                view.addSubview(iv)
-            }
-        }
+        let dot = NSTextField(labelWithString: "●")
+        dot.font = .systemFont(ofSize: 11)
+        dot.textColor = color
+        dot.frame = NSRect(x: 10, y: 4, width: 14, height: 14)
+        view.addSubview(dot)
 
         let lbl = NSTextField(labelWithString: label)
         lbl.font = .systemFont(ofSize: 13)
