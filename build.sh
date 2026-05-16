@@ -38,7 +38,8 @@ mkdir -p "$RESOURCES_DIR"
 # Compile
 swiftc "$SCRIPT_DIR/src/ClaudeUsageBar.swift" \
   -o "$BUILD_TMP/$APP_NAME" \
-  -O
+  -O \
+  -framework UserNotifications
 
 cp "$BUILD_TMP/$APP_NAME" "$MACOS_DIR/$APP_NAME"
 chmod +x "$MACOS_DIR/$APP_NAME"

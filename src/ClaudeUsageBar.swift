@@ -1,4 +1,5 @@
 import Cocoa
+import UserNotifications
 
 // MARK: — State
 struct Limit: Codable {
@@ -301,12 +302,15 @@ struct L {
 }
 
 // MARK: — App Delegate
-class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotificationCenterDelegate {
     var statusItem: NSStatusItem!
     var timer: Timer?
     var setupStatus: SetupStatus = .failed
     var aboutWindow: NSWindow?
     let stateFile = stateFilePath
+    var statusTimer: Timer?
+    var claudeStatus: ClaudeStatus?
+    let statusFetchURL = URL(string: "https://status.claude.com/api/v2/summary.json")!
 
     func applicationDidFinishLaunching(_ n: Notification) {
         setupStatus = configureClaudeStatusLine()
@@ -321,9 +325,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
             self?.update()
         }
+        UNUserNotificationCenter.current().delegate = self
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+        fetchClaudeStatus()
+        statusTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
+            self?.fetchClaudeStatus()
+        }
     }
 
-    func menuNeedsUpdate(_ menu: NSMenu) { update() }
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        if let s = claudeStatus, Date().timeIntervalSince(s.fetchedAt) > 300 {
+            fetchClaudeStatus()
+        }
+        update()
+    }
 
     func update() {
         let l = L.detect()
@@ -385,6 +400,60 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let f = DateFormatter()
         f.dateFormat = "MMM d HH:mm"
         return f.string(from: d)
+    }
+
+    func fetchClaudeStatus() {
+        let task = URLSession.shared.dataTask(with: statusFetchURL) { [weak self] data, _, error in
+            guard let self, let data, error == nil,
+                  let response = try? JSONDecoder().decode(StatusAPIResponse.self, from: data)
+            else { return }
+
+            let filtered = response.components.filter {
+                $0.name.contains("Claude Code") || $0.name.contains("Claude API")
+            }
+            let active = response.incidents.filter { $0.status != "resolved" }
+            let newStatus = ClaudeStatus(components: filtered, incidents: active, fetchedAt: Date())
+
+            let defaults = UserDefaults.standard
+            let seen = defaults.stringArray(forKey: "seenIncidentIDs") ?? []
+            let alertsOn = defaults.object(forKey: "statusAlertsEnabled") as? Bool ?? true
+
+            let unseen = active.filter { !seen.contains($0.id) }
+            if alertsOn && !unseen.isEmpty {
+                for incident in unseen {
+                    let content = UNMutableNotificationContent()
+                    content.title = "Claude incident detected"
+                    content.body = incident.name
+                    let req = UNNotificationRequest(
+                        identifier: "claude-incident-\(incident.id)",
+                        content: content,
+                        trigger: nil
+                    )
+                    UNUserNotificationCenter.current().add(req, withCompletionHandler: nil)
+                }
+            }
+            let allSeen = seen + unseen.map(\.id)
+            defaults.set(allSeen, forKey: "seenIncidentIDs")
+
+            DispatchQueue.main.async {
+                self.claudeStatus = newStatus
+                self.update()
+            }
+        }
+        task.resume()
+    }
+
+    @objc func toggleAlerts() {
+        let defaults = UserDefaults.standard
+        let current = defaults.object(forKey: "statusAlertsEnabled") as? Bool ?? true
+        defaults.set(!current, forKey: "statusAlertsEnabled")
+        update()
+    }
+
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                willPresent notification: UNNotification,
+                                withCompletionHandler handler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        handler([.banner, .sound])
     }
 
     @objc func doRefresh() { update() }
