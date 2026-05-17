@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		07BF23D79ACC77BAB7D08724 /* ClaudeUsageBarWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CFC6AC498401C017A8C152F0 /* ClaudeUsageBarWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		665D8D2E542CF96CD05CB1F3 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFF32AC3238A935D947BFA25 /* main.swift */; };
 		A5B0FA322709E597F81806F5 /* ClaudeUsageBarWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 687BA5F6B836E55AA7CEDB2D /* ClaudeUsageBarWidget.swift */; };
 		E264323E650DD15D768E9064 /* ClaudeUsageBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6383F8133AF17E12F8E22428 /* ClaudeUsageBar.swift */; };
 /* End PBXBuildFile section */
@@ -40,6 +41,7 @@
 		6383F8133AF17E12F8E22428 /* ClaudeUsageBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeUsageBar.swift; sourceTree = "<group>"; };
 		687BA5F6B836E55AA7CEDB2D /* ClaudeUsageBarWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeUsageBarWidget.swift; sourceTree = "<group>"; };
 		6C0066D9CF174EA4F3BD4CE4 /* ClaudeUsageBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ClaudeUsageBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		BFF32AC3238A935D947BFA25 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		CFC6AC498401C017A8C152F0 /* ClaudeUsageBarWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ClaudeUsageBarWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -66,6 +68,7 @@
 			isa = PBXGroup;
 			children = (
 				6383F8133AF17E12F8E22428 /* ClaudeUsageBar.swift */,
+				BFF32AC3238A935D947BFA25 /* main.swift */,
 			);
 			path = src;
 			sourceTree = "<group>";
@@ -85,7 +88,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = B3DB8DF6992B7D47817CE567 /* Build configuration list for PBXNativeTarget "ClaudeUsageBar" */;
 			buildPhases = (
-				0186115078EA9C595B14B5C2 /* Generate App Icon */,
 				5F2CCD1993E006B8D596BDE8 /* Sources */,
 				44F2CD08C5EB480D26C11149 /* Embed Foundation Extensions */,
 			);
@@ -155,34 +157,13 @@
 		};
 /* End PBXProject section */
 
-/* Begin PBXShellScriptBuildPhase section */
-		0186115078EA9C595B14B5C2 /* Generate App Icon */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "Generate App Icon";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "set -euo pipefail\nBUILD_TMP=\"${DERIVED_FILE_DIR}/icon_build\"\nICONSET=\"${BUILD_TMP}/ClaudeUsageBar.iconset\"\nICNS=\"${BUILT_PRODUCTS_DIR}/${WRAPPER_NAME}/Contents/Resources/ClaudeUsageBar.icns\"\nrm -rf \"$BUILD_TMP\" && mkdir -p \"$BUILD_TMP\"\nswiftc \"${SRCROOT}/src/IconGenerator.swift\" -o \"${BUILD_TMP}/IconGenerator\" -O\n\"${BUILD_TMP}/IconGenerator\" \"$ICONSET\"\niconutil -c icns \"$ICONSET\" -o \"$ICNS\"\n";
-		};
-/* End PBXShellScriptBuildPhase section */
-
 /* Begin PBXSourcesBuildPhase section */
 		5F2CCD1993E006B8D596BDE8 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				E264323E650DD15D768E9064 /* ClaudeUsageBar.swift in Sources */,
+				665D8D2E542CF96CD05CB1F3 /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

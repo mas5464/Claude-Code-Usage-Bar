@@ -21,9 +21,13 @@ targets:
     platform: macOS
     sources:
       - src/ClaudeUsageBar.swift
+      - src/main.swift
     resources:
       - path: Resources/claudecode-color.svg
         buildPhase: resources
+      - path: Resources/ClaudeUsageBar.icns
+        buildPhase: resources
+        optional: true
     info:
       path: Resources/Info.plist
       properties:
@@ -43,18 +47,6 @@ targets:
       - target: ClaudeUsageBarWidget
         embed: true
         codeSign: false
-    preBuildScripts:
-      - name: Generate App Icon
-        script: |
-          set -euo pipefail
-          BUILD_TMP="${DERIVED_FILE_DIR}/icon_build"
-          ICONSET="${BUILD_TMP}/ClaudeUsageBar.iconset"
-          ICNS="${BUILT_PRODUCTS_DIR}/${WRAPPER_NAME}/Contents/Resources/ClaudeUsageBar.icns"
-          rm -rf "$BUILD_TMP" && mkdir -p "$BUILD_TMP"
-          swiftc "${SRCROOT}/src/IconGenerator.swift" -o "${BUILD_TMP}/IconGenerator" -O
-          "${BUILD_TMP}/IconGenerator" "$ICONSET"
-          iconutil -c icns "$ICONSET" -o "$ICNS"
-        basedOnDependencyAnalysis: false
     frameworks:
       - sdk: Cocoa.framework
       - sdk: UserNotifications.framework

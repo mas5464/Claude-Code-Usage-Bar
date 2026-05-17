@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# build.sh — compiles ClaudeUsageBar.app and packages a DMG
-# Requires: Xcode Command Line Tools (xcode-select --install)
+# build.sh — compiles ClaudeUsageBar.app (with widget) and packages a DMG
+# Requires: Xcode (not just CLT) + xcodegen (brew install xcodegen)
 
 set -euo pipefail
 
@@ -8,77 +8,64 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_NAME="ClaudeUsageBar"
 DIST_DIR="$SCRIPT_DIR/dist"
 APP_DEST="$DIST_DIR/$APP_NAME.app"
-MACOS_DIR="$APP_DEST/Contents/MacOS"
-RESOURCES_DIR="$APP_DEST/Contents/Resources"
-BUILD_TMP="/tmp/${APP_NAME}_build"
+BUILD_TMP="/tmp/${APP_NAME}_xcode"
 DMG_STAGING="/tmp/${APP_NAME}_dmg"
 DMG_DEST="$DIST_DIR/$APP_NAME.dmg"
-ICONSET_DIR="$BUILD_TMP/$APP_NAME.iconset"
 
 echo "Building $APP_NAME ..."
 
 # Preflight
-if ! command -v swiftc &>/dev/null; then
-  echo "Error: swiftc not found. Install Xcode Command Line Tools:"
-  echo "  xcode-select --install"
+if ! command -v xcodebuild &>/dev/null; then
+  echo "Error: xcodebuild not found. Install Xcode from the App Store."
   exit 1
 fi
-if ! command -v iconutil &>/dev/null; then
-  echo "Error: iconutil not found. Install Xcode Command Line Tools:"
-  echo "  xcode-select --install"
+if ! command -v xcodegen &>/dev/null; then
+  echo "Error: xcodegen not found. Install with: brew install xcodegen"
   exit 1
 fi
 
 # Prepare
 rm -rf "$BUILD_TMP" "$APP_DEST" "$DMG_STAGING"
-mkdir -p "$BUILD_TMP" "$DIST_DIR"
-mkdir -p "$MACOS_DIR"
-mkdir -p "$RESOURCES_DIR"
+mkdir -p "$DIST_DIR" "$BUILD_TMP"
 
-# Compile
-swiftc "$SCRIPT_DIR/src/ClaudeUsageBar.swift" \
-  -o "$BUILD_TMP/$APP_NAME" \
-  -O \
-  -framework UserNotifications
+# Generate app icon (requires display; do this outside Xcode build phase)
+ICON_TMP="$BUILD_TMP/icon_prep"
+ICONSET_DIR="$ICON_TMP/ClaudeUsageBar.iconset"
+mkdir -p "$ICON_TMP"
+swiftc "$SCRIPT_DIR/src/IconGenerator.swift" -o "$ICON_TMP/IconGenerator" -O
+"$ICON_TMP/IconGenerator" "$ICONSET_DIR"
+iconutil -c icns "$ICONSET_DIR" -o "$SCRIPT_DIR/Resources/ClaudeUsageBar.icns"
 
-cp "$BUILD_TMP/$APP_NAME" "$MACOS_DIR/$APP_NAME"
-chmod +x "$MACOS_DIR/$APP_NAME"
+# (Re)generate Xcode project from project.yml
+xcodegen generate --quiet
 
-# Build the macOS bundle icon from the same Claude Code mark used in the menu bar.
-cp "$SCRIPT_DIR/Resources/claudecode-color.svg" "$RESOURCES_DIR/claudecode-color.svg"
-swiftc "$SCRIPT_DIR/src/IconGenerator.swift" \
-  -o "$BUILD_TMP/IconGenerator" \
-  -O
-"$BUILD_TMP/IconGenerator" "$ICONSET_DIR"
-iconutil -c icns "$ICONSET_DIR" -o "$RESOURCES_DIR/$APP_NAME.icns"
+# Build
+xcodebuild \
+  -project "$SCRIPT_DIR/ClaudeUsageBar.xcodeproj" \
+  -scheme "$APP_NAME" \
+  -configuration Release \
+  -derivedDataPath "$BUILD_TMP" \
+  clean build \
+  CODE_SIGN_IDENTITY="-" \
+  CODE_SIGN_STYLE=Manual \
+  | grep -E "^(error:|warning:|Build succeeded|.*ClaudeUsageBar.*)" || true
 
-# Info.plist
-mkdir -p "$APP_DEST/Contents"
-cat > "$APP_DEST/Contents/Info.plist" << 'PLIST'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>CFBundleName</key>           <string>ClaudeUsageBar</string>
-  <key>CFBundleIdentifier</key>     <string>com.chrispiz.claude-usage-bar</string>
-  <key>CFBundleVersion</key>        <string>1.1</string>
-  <key>CFBundleExecutable</key>     <string>ClaudeUsageBar</string>
-  <key>CFBundleIconFile</key>       <string>ClaudeUsageBar</string>
-  <key>CFBundlePackageType</key>    <string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>1.1</string>
-  <key>LSUIElement</key>            <true/>
-  <key>NSHighResolutionCapable</key><true/>
-  <key>LSMinimumSystemVersion</key> <string>13.0</string>
-</dict>
-</plist>
-PLIST
+BUILT_APP="$BUILD_TMP/Build/Products/Release/$APP_NAME.app"
 
-if command -v codesign &>/dev/null; then
-  codesign --force --deep --sign "${CODE_SIGN_IDENTITY:--}" "$APP_DEST" >/dev/null
+if [ ! -d "$BUILT_APP" ]; then
+  echo "Error: build output not found at $BUILT_APP"
+  exit 1
+fi
+
+cp -R "$BUILT_APP" "$APP_DEST"
+
+if [ -n "${CODE_SIGN_IDENTITY:-}" ]; then
+  codesign --force --deep --sign "$CODE_SIGN_IDENTITY" "$APP_DEST" >/dev/null
+else
+  codesign --force --deep --sign "-" "$APP_DEST" >/dev/null
 fi
 
 rm -rf "$BUILD_TMP"
-
 echo "  ✓ Built → $APP_DEST"
 echo ""
 
