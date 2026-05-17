@@ -120,57 +120,33 @@ if [ "${SKIP_BUILD:-0}" = "1" ]; then
     echo "  https://github.com/ChrisPiz/Claude-Code-Usage-Bar/releases/latest"
   fi
 else
-echo "Building ClaudeUsageBar.app ..."
-if ! command -v swiftc &>/dev/null; then
-  echo "  ⚠  swiftc not found — skipping native app build."
-  echo "  Install Xcode Command Line Tools:  xcode-select --install"
-else
-  BUILD_TMP="/tmp/${APP_NAME}_build"
-  MACOS_DIR="$APP_DEST/Contents/MacOS"
-
-  rm -rf "$BUILD_TMP" && mkdir -p "$BUILD_TMP"
-  mkdir -p "$MACOS_DIR"
-
-  # Download or copy Swift source
-  SWIFT_SRC="$BUILD_TMP/ClaudeUsageBar.swift"
-  if [ -n "$LOCAL_SRC" ] && [ -f "$LOCAL_SRC/ClaudeUsageBar.swift" ]; then
-    cp "$LOCAL_SRC/ClaudeUsageBar.swift" "$SWIFT_SRC"
+  echo "Building ClaudeUsageBar.app ..."
+  if ! command -v xcodebuild &>/dev/null; then
+    echo "  ⚠  Xcode not found — skipping native app build."
+    echo "  Install Xcode from the App Store, then run: bash build.sh"
+    echo "  Or download a pre-built release from:"
+    echo "  https://github.com/ChrisPiz/Claude-Code-Usage-Bar/releases/latest"
+  elif ! command -v xcodegen &>/dev/null; then
+    echo "  ⚠  xcodegen not found — skipping native app build."
+    echo "  Install with: brew install xcodegen"
+    echo "  Then run: bash build.sh"
   else
-    curl -fsSL "$REPO_RAW/src/ClaudeUsageBar.swift" -o "$SWIFT_SRC"
+    if [ -n "$LOCAL_BUILD" ] && [ -f "$LOCAL_BUILD" ]; then
+      bash "$LOCAL_BUILD"
+    else
+      curl -fsSL "$REPO_RAW/build.sh" | bash
+    fi
+
+    if [ -d "$SCRIPT_DIR/dist/$APP_NAME.app" ]; then
+      mkdir -p "$INSTALL_DIR"
+      rm -rf "$APP_DEST"
+      cp -R "$SCRIPT_DIR/dist/$APP_NAME.app" "$APP_DEST"
+      pkill -x ClaudeUsageBar 2>/dev/null || true
+      open "$APP_DEST"
+      echo "  ✓ ClaudeUsageBar.app built and launched → $APP_DEST"
+      echo "  ℹ  Add to Login Items: System Settings → General → Login Items"
+    fi
   fi
-
-  swiftc "$SWIFT_SRC" -o "$BUILD_TMP/$APP_NAME" -O 2>&1 | grep -v "^$" || true
-
-  cp "$BUILD_TMP/$APP_NAME" "$MACOS_DIR/$APP_NAME"
-  chmod +x "$MACOS_DIR/$APP_NAME"
-
-  mkdir -p "$APP_DEST/Contents"
-  cat > "$APP_DEST/Contents/Info.plist" << 'PLIST'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>CFBundleName</key>           <string>ClaudeUsageBar</string>
-  <key>CFBundleIdentifier</key>     <string>com.chrispiz.claude-usage-bar</string>
-  <key>CFBundleVersion</key>        <string>1.0</string>
-  <key>CFBundleExecutable</key>     <string>ClaudeUsageBar</string>
-  <key>CFBundlePackageType</key>    <string>APPL</string>
-  <key>LSUIElement</key>            <true/>
-  <key>NSHighResolutionCapable</key><true/>
-  <key>LSMinimumSystemVersion</key> <string>13.0</string>
-</dict>
-</plist>
-PLIST
-
-  rm -rf "$BUILD_TMP"
-
-  # Kill any previous instance
-  pkill -x ClaudeUsageBar 2>/dev/null || true
-
-  open "$APP_DEST"
-  echo "  ✓ ClaudeUsageBar.app built and launched → $APP_DEST"
-  echo "  ℹ  Add to Login Items: System Settings → General → Login Items"
-fi
 fi  # end SKIP_BUILD check
 
 # ── Install SwiftBar plugin (optional) ──────────────────────────────────────
