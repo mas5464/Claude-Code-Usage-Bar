@@ -1,0 +1,83 @@
+name: ClaudeUsageBar
+options:
+  bundleIdPrefix: com.chrispiz
+  deploymentTarget:
+    macOS: "13.0"
+  xcodeVersion: "15"
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MACOSX_DEPLOYMENT_TARGET: "13.0"
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_STYLE: Manual
+    ENABLE_HARDENED_RUNTIME: NO
+    DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+
+targets:
+  ClaudeUsageBar:
+    type: application
+    platform: macOS
+    sources:
+      - src/ClaudeUsageBar.swift
+    resources:
+      - path: Resources/claudecode-color.svg
+        buildPhase: resources
+    info:
+      path: Resources/Info.plist
+      properties:
+        CFBundleShortVersionString: "1.1"
+        CFBundleVersion: "1.1"
+        CFBundleIconFile: ClaudeUsageBar
+        LSUIElement: true
+        NSHighResolutionCapable: true
+        LSMinimumSystemVersion: "13.0"
+        NSUserNotificationAlertStyle: alert
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.chrispiz.claude-usage-bar
+        PRODUCT_NAME: ClaudeUsageBar
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks"
+    dependencies:
+      - target: ClaudeUsageBarWidget
+        embed: true
+        codeSign: false
+    preBuildScripts:
+      - name: Generate App Icon
+        script: |
+          set -euo pipefail
+          BUILD_TMP="${DERIVED_FILE_DIR}/icon_build"
+          ICONSET="${BUILD_TMP}/ClaudeUsageBar.iconset"
+          ICNS="${BUILT_PRODUCTS_DIR}/${WRAPPER_NAME}/Contents/Resources/ClaudeUsageBar.icns"
+          rm -rf "$BUILD_TMP" && mkdir -p "$BUILD_TMP"
+          swiftc "${SRCROOT}/src/IconGenerator.swift" -o "${BUILD_TMP}/IconGenerator" -O
+          "${BUILD_TMP}/IconGenerator" "$ICONSET"
+          iconutil -c icns "$ICONSET" -o "$ICNS"
+        basedOnDependencyAnalysis: false
+    frameworks:
+      - sdk: Cocoa.framework
+      - sdk: UserNotifications.framework
+      - sdk: WidgetKit.framework
+
+  ClaudeUsageBarWidget:
+    type: app-extension
+    platform: macOS
+    sources:
+      - widget/ClaudeUsageBarWidget.swift
+    info:
+      path: widget/Info.plist
+      properties:
+        CFBundleShortVersionString: "1.1"
+        CFBundleVersion: "1.1"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.chrispiz.claude-usage-bar.widget
+        PRODUCT_NAME: ClaudeUsageBarWidget
+        SKIP_INSTALL: YES
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../../../../Frameworks"
+    frameworks:
+      - sdk: WidgetKit.framework
+      - sdk: SwiftUI.framework
