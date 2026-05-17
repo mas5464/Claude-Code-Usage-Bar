@@ -570,13 +570,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
         versionLabel.frame = NSRect(x: 235, y: 148, width: 390, height: 26)
         content.addSubview(versionLabel)
 
-        let developer = NSTextField(labelWithString: "Developed by ChrisPiz")
+        let developer = NSTextField(labelWithString: "Developed by MiguelSosa")
         developer.font = .systemFont(ofSize: 15)
         developer.textColor = .labelColor
         developer.frame = NSRect(x: 235, y: 112, width: 390, height: 22)
         content.addSubview(developer)
 
-        let github = NSButton(title: "github.com/ChrisPiz/Claude-Code-Usage-Bar", target: self, action: #selector(openGitHub))
+        let github = NSButton(title: "github.com/mas5464/Claude-Code-Usage-Bar", target: self, action: #selector(openGitHub))
         github.bezelStyle = .inline
         github.isBordered = false
         github.alignment = .left
@@ -599,7 +599,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
     }
 
     @objc func openGitHub() {
-        if let url = URL(string: "https://github.com/ChrisPiz/Claude-Code-Usage-Bar") {
+        if let url = URL(string: "https://github.com/mas5464/Claude-Code-Usage-Bar") {
             NSWorkspace.shared.open(url)
         }
     }

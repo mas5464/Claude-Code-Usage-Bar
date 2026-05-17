@@ -5,7 +5,7 @@
 # Outputs colored ANSI badges to stdout (shown in terminal statusline).
 # Writes ~/.claude/.claude-usage-state.json for the menu bar plugin.
 #
-# Project: https://github.com/ChrisPiz/Claude-Code-Usage-Bar
+# Project: https://github.com/mas5464/Claude-Code-Usage-Bar
 
 set -euo pipefail
 
@@ -87,4 +87,6 @@ NOW=$(date +%s)
   --argjson input "$INPUT" \
   --argjson ts "$NOW" \
   '{updated_at: $ts, rate_limits: $input.rate_limits}' \
-  > "$STATE_FILE" 2>/dev/null || true
+  | tee "$STATE_FILE" \
+    > "$HOME/Library/Containers/com.miguelsosa.claude-usage-bar.widget/Data/.claude-usage-state.json" \
+    2>/dev/null || true

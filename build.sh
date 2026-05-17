@@ -39,6 +39,17 @@ iconutil -c icns "$ICONSET_DIR" -o "$SCRIPT_DIR/Resources/ClaudeUsageBar.icns"
 # (Re)generate Xcode project from project.yml
 xcodegen generate --quiet
 
+# Determine signing identity
+# Widget extensions require sandbox + proper signing to register with the system.
+# Use CODE_SIGN_IDENTITY env var if set, otherwise auto-detect Apple Development cert,
+# falling back to ad-hoc ("-") for CI/release builds.
+if [ -z "${CODE_SIGN_IDENTITY:-}" ]; then
+  AUTO_IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null \
+    | grep "Apple Development" | head -1 | sed 's/.*"\(.*\)"/\1/')
+  CODE_SIGN_IDENTITY="${AUTO_IDENTITY:--}"
+fi
+echo "  Signing with: $CODE_SIGN_IDENTITY"
+
 # Build
 xcodebuild \
   -project "$SCRIPT_DIR/ClaudeUsageBar.xcodeproj" \
@@ -46,7 +57,7 @@ xcodebuild \
   -configuration Release \
   -derivedDataPath "$BUILD_TMP" \
   clean build \
-  CODE_SIGN_IDENTITY="-" \
+  CODE_SIGN_IDENTITY="$CODE_SIGN_IDENTITY" \
   CODE_SIGN_STYLE=Manual \
   | grep -E "^(error:|warning:|Build succeeded|.*ClaudeUsageBar.*)" || true
 
@@ -59,10 +70,20 @@ fi
 
 cp -R "$BUILT_APP" "$APP_DEST"
 
-if [ -n "${CODE_SIGN_IDENTITY:-}" ]; then
-  codesign --force --deep --sign "$CODE_SIGN_IDENTITY" "$APP_DEST" >/dev/null
+# Copy resources (icns, svg) that xcodegen doesn't include in the bundle automatically
+mkdir -p "$APP_DEST/Contents/Resources"
+cp "$SCRIPT_DIR/Resources/ClaudeUsageBar.icns" "$APP_DEST/Contents/Resources/"
+cp "$SCRIPT_DIR/Resources/claudecode-color.svg" "$APP_DEST/Contents/Resources/"
+
+# Re-sign widget extension with entitlements (required for pluginkit registration)
+WIDGET_APPEX="$APP_DEST/Contents/PlugIns/ClaudeUsageBarWidget.appex"
+ENTITLEMENTS="$SCRIPT_DIR/widget/ClaudeUsageBarWidget.entitlements"
+if [ -d "$WIDGET_APPEX" ] && [ "$CODE_SIGN_IDENTITY" != "-" ]; then
+  codesign --force --sign "$CODE_SIGN_IDENTITY" \
+    --entitlements "$ENTITLEMENTS" "$WIDGET_APPEX" >/dev/null
+  codesign --force --sign "$CODE_SIGN_IDENTITY" "$APP_DEST" >/dev/null
 else
-  codesign --force --deep --sign "-" "$APP_DEST" >/dev/null
+  codesign --force --deep --sign "$CODE_SIGN_IDENTITY" "$APP_DEST" >/dev/null
 fi
 
 rm -rf "$BUILD_TMP"

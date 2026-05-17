@@ -2,18 +2,19 @@
 # install.sh — claude-usage-bar installer
 #
 # Usage (from clone):  bash install.sh
-# Usage (one-liner):   bash <(curl -s https://raw.githubusercontent.com/ChrisPiz/Claude-Code-Usage-Bar/main/install.sh)
+# Usage (one-liner):   bash <(curl -s https://raw.githubusercontent.com/mas5464/Claude-Code-Usage-Bar/main/install.sh)
 
 set -euo pipefail
 
-REPO_RAW="https://raw.githubusercontent.com/ChrisPiz/Claude-Code-Usage-Bar/main"
+REPO_RAW="https://raw.githubusercontent.com/mas5464/Claude-Code-Usage-Bar/main"
 CLAUDE_DIR="$HOME/.claude"
 HOOKS_DEST="$CLAUDE_DIR/hooks"
 SETTINGS="$CLAUDE_DIR/settings.json"
 JQ="/usr/bin/jq"
 
 APP_NAME="ClaudeUsageBar"
-INSTALL_DIR="$HOME/Applications"
+# Install to /Applications so the WidgetKit extension is discoverable by pluginkit
+INSTALL_DIR="/Applications"
 APP_DEST="$INSTALL_DIR/$APP_NAME.app"
 
 SWIFTBAR_DIR="$HOME/Documents/SwiftBar"
@@ -117,7 +118,7 @@ if [ "${SKIP_BUILD:-0}" = "1" ]; then
     echo "  ✓ Launched existing $APP_DEST"
   else
     echo "  ⚠  $APP_DEST not found. Download from:"
-    echo "  https://github.com/ChrisPiz/Claude-Code-Usage-Bar/releases/latest"
+    echo "  https://github.com/mas5464/Claude-Code-Usage-Bar/releases/latest"
   fi
 else
   echo "Building ClaudeUsageBar.app ..."
@@ -125,7 +126,7 @@ else
     echo "  ⚠  Xcode not found — skipping native app build."
     echo "  Install Xcode from the App Store, then run: bash build.sh"
     echo "  Or download a pre-built release from:"
-    echo "  https://github.com/ChrisPiz/Claude-Code-Usage-Bar/releases/latest"
+    echo "  https://github.com/mas5464/Claude-Code-Usage-Bar/releases/latest"
   elif ! command -v xcodegen &>/dev/null; then
     echo "  ⚠  xcodegen not found — skipping native app build."
     echo "  Install with: brew install xcodegen"
@@ -138,13 +139,16 @@ else
     fi
 
     if [ -d "$SCRIPT_DIR/dist/$APP_NAME.app" ]; then
-      mkdir -p "$INSTALL_DIR"
       rm -rf "$APP_DEST"
       cp -R "$SCRIPT_DIR/dist/$APP_NAME.app" "$APP_DEST"
+      # Register widget extension with the system
+      WIDGET_APPEX="$APP_DEST/Contents/PlugIns/${APP_NAME}Widget.appex"
+      [ -d "$WIDGET_APPEX" ] && pluginkit -a "$WIDGET_APPEX" 2>/dev/null || true
       pkill -x ClaudeUsageBar 2>/dev/null || true
       open "$APP_DEST"
       echo "  ✓ ClaudeUsageBar.app built and launched → $APP_DEST"
       echo "  ℹ  Add to Login Items: System Settings → General → Login Items"
+      echo "  ℹ  Add widget: right-click desktop → Edit Widgets → search 'Claude'"
     fi
   fi
 fi  # end SKIP_BUILD check

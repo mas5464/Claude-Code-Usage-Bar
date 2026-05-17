@@ -53,8 +53,13 @@ struct UsageEntry: TimelineEntry {
 // MARK: — Timeline Provider
 
 struct Provider: TimelineProvider {
-    let stateFilePath = (ProcessInfo.processInfo.environment["HOME"] ?? NSHomeDirectory())
-        + "/.claude/.claude-usage-state.json"
+    // In sandbox, HOME points to the container's Data dir, so .claude-usage-state.json
+    // lives at $HOME/.claude-usage-state.json — no hardcoded bundle ID needed.
+    let stateFilePath: String = {
+        let home = ProcessInfo.processInfo.environment["HOME"]
+            ?? FileManager.default.homeDirectoryForCurrentUser.path
+        return (home as NSString).appendingPathComponent(".claude-usage-state.json")
+    }()
 
     func placeholder(in context: Context) -> UsageEntry {
         UsageEntry(

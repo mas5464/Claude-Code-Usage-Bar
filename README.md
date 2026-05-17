@@ -28,7 +28,7 @@ Open it once, keep it in the menu bar, and check your usage without opening Clau
 
 ### Download the DMG
 
-Download `ClaudeUsageBar.dmg` from the [latest release](https://github.com/ChrisPiz/Claude-Code-Usage-Bar/releases/latest), open it, and drag `ClaudeUsageBar.app` to `Applications`.
+Download `ClaudeUsageBar.dmg` from the [latest release](https://github.com/mas5464/Claude-Code-Usage-Bar/releases/latest), open it, and drag `ClaudeUsageBar.app` to `Applications`.
 
 Open the app once. It configures Claude Code automatically.
 
