@@ -12,6 +12,7 @@ ClaudeUsageBar shows your Claude Code usage and the live Claude system status in
 - **System status** — live status for Claude Code and Claude API from status.claude.com, updated every 5 minutes
 - **Incident alerts** — macOS notifications when a new incident is detected (toggle in menu)
 - **Badge icon** — red dot on the menu bar icon when there is an active incident
+- **Desktop widget** — Medium and Large macOS widgets showing usage bars and reset times
 
 Open it once, keep it in the menu bar, and check your usage without opening Claude settings.
 
@@ -45,6 +46,20 @@ Unsigned local builds may require right-click → Open. Public releases should b
 Add the app to Login Items so it launches automatically:
 
 **System Settings → General → Login Items → +** → select `/Applications/ClaudeUsageBar.app`
+
+---
+
+## Desktop widget
+
+ClaudeUsageBar includes a macOS desktop widget in Medium and Large sizes.
+
+**To add the widget:**
+
+1. Right-click the desktop → **Edit Widgets**
+2. Search for **Claude**
+3. Drag the Medium or Large widget onto your desktop
+
+The widget shows session (5h) and weekly (7d) usage bars with reset times, and refreshes every 15 minutes. It gets its data from the same state file written by the Claude Code hook — send a message in Claude Code to populate it.
 
 ---
 
