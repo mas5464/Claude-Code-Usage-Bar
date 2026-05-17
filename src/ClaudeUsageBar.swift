@@ -1,5 +1,6 @@
 import Cocoa
 import UserNotifications
+import WidgetKit
 
 // MARK: — State
 struct Limit: Codable {
@@ -313,6 +314,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
     var claudeStatus: ClaudeStatus?
     let statusFetchURL = URL(string: "https://status.claude.com/api/v2/summary.json")!
     var isFetchingStatus = false
+    var lastStateUpdatedAt: Int = 0
 
     func applicationDidFinishLaunching(_ n: Notification) {
         setupStatus = configureClaudeStatusLine()
@@ -359,6 +361,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
         // Usage section (first)
         if let raw   = FileManager.default.contents(atPath: stateFile),
            let state = try? JSONDecoder().decode(UsageState.self, from: raw) {
+
+            if state.updatedAt != lastStateUpdatedAt {
+                lastStateUpdatedAt = state.updatedAt
+                WidgetCenter.shared.reloadAllTimelines()
+            }
 
             let now   = Int(Date().timeIntervalSince1970)
             let stale = (now - state.updatedAt) > 21600 ? l.stale : ""
