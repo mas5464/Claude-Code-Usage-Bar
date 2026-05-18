@@ -527,11 +527,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
             if let btn = statusItem.button {
                 if let cost = costStr {
                     let full = NSMutableAttributedString()
-                    let costColor = NSColor(calibratedRed: 0.627, green: 0.910, blue: 0.565, alpha: 1.0)
+                    let costColor = NSColor.labelColor
                     let sepColor  = NSColor.secondaryLabelColor
                     let usageColor: NSColor = {
                         let p = pct5h ?? 0
-                        if p < 70 { return NSColor(calibratedRed: 0.298, green: 0.851, blue: 0.392, alpha: 1.0) }
+                        if p < 70 { return NSColor.systemGreen }
                         if p < 90 { return NSColor.systemOrange }
                         return NSColor.systemRed
                     }()
@@ -887,7 +887,7 @@ extension NSMenu {
         let leftX: CGFloat = 14
         let costLabel = NSTextField(labelWithString: costUSD.map { formatCost($0) } ?? "--")
         costLabel.font = .monospacedDigitSystemFont(ofSize: 20, weight: .bold)
-        costLabel.textColor = NSColor(calibratedRed: 0.627, green: 0.910, blue: 0.565, alpha: 1.0)
+        costLabel.textColor = .labelColor
         costLabel.frame = NSRect(x: leftX, y: panelHeight - 36, width: 120, height: 28)
         view.addSubview(costLabel)
 
@@ -901,7 +901,7 @@ extension NSMenu {
             let shortModel = m.replacingOccurrences(of: "claude-", with: "")
             let modelLabel = NSTextField(labelWithString: shortModel)
             modelLabel.font = .systemFont(ofSize: 10)
-            modelLabel.textColor = NSColor(calibratedRed: 0.565, green: 0.533, blue: 0.667, alpha: 1.0)
+            modelLabel.textColor = .tertiaryLabelColor
             modelLabel.frame = NSRect(x: leftX, y: 12, width: 120, height: 16)
             view.addSubview(modelLabel)
         }

@@ -290,7 +290,7 @@ struct CostColumnView: View {
                 .textCase(Text.Case.uppercase)
             Text(totalCostUSD.map { wFormatCost($0) } ?? "--")
                 .font(.system(size: 22, weight: .bold, design: .rounded))
-                .foregroundStyle(Color(red: 0.627, green: 0.910, blue: 0.565))
+                .foregroundStyle(.primary)
                 .minimumScaleFactor(0.7)
                 .lineLimit(1)
             Text("all-time")
@@ -300,7 +300,7 @@ struct CostColumnView: View {
             if let m = model, !m.isEmpty {
                 Text(m.replacingOccurrences(of: "claude-", with: ""))
                     .font(.system(size: 9))
-                    .foregroundStyle(Color(red: 0.565, green: 0.533, blue: 0.667))
+                    .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
@@ -389,7 +389,7 @@ struct LargeWidgetView: View {
                         if let cost = entry.totalCostUSD {
                             Text(wFormatCost(cost))
                                 .font(.system(size: 13, weight: .bold, design: .rounded))
-                                .foregroundStyle(Color(red: 0.627, green: 0.910, blue: 0.565))
+                                .foregroundStyle(.primary)
                         }
                     }
                     Spacer()
