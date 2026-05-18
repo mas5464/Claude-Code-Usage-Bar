@@ -148,16 +148,16 @@ func renderStatusLine() {
     let reset = "\u{001B}[0m"
 
     if let limit = limits.fiveHour {
-        let pct = pctText(limit)
-        parts.append("\(ansiForPct(limit.usedPercentage))5h:\(pct)%\(reset)")
+        let pct = effectiveUsedPercentage(limit)
+        parts.append("\(ansiForPct(Double(pct)))5h:\(pct)%\(reset)")
     }
     if let limit = limits.sevenDay {
-        let pct = pctText(limit)
-        parts.append("\(ansiForPct(limit.usedPercentage))7d:\(pct)%\(reset)")
+        let pct = effectiveUsedPercentage(limit)
+        parts.append("\(ansiForPct(Double(pct)))7d:\(pct)%\(reset)")
     }
     if let limit = limits.sevenDaySonnet {
-        let pct = pctText(limit)
-        parts.append("\(ansiForPct(limit.usedPercentage))7dS:\(pct)%\(reset)")
+        let pct = effectiveUsedPercentage(limit)
+        parts.append("\(ansiForPct(Double(pct)))7dS:\(pct)%\(reset)")
     }
 
     var prefix = ""
