@@ -545,20 +545,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
                 }
             }
 
-            if let f = fh {
-                m.addRow(l.session, value: "\(effectiveUsedPercentage(f, now: now))% \(l.used)", symbol: "clock")
-                if let ts = f.resetsAt {
-                    let rel = relativeReset(ts, now: now, l: l)
-                    if !rel.isEmpty { m.addPlain(rel, size: 11, gray: true) }
-                }
-            }
-            if let s = sd {
-                m.addRow(l.weekly, value: "\(effectiveUsedPercentage(s, now: now))% \(l.used)", symbol: "calendar")
-                if let ts = s.resetsAt {
-                    let rel = relativeReset(ts, now: now, l: l)
-                    if !rel.isEmpty { m.addPlain(rel, size: 11, gray: true) }
-                }
-            }
+            m.addSplitPanel(
+                fiveHour: fh,
+                sevenDay: sd,
+                costUSD:  state.totalCostUSD,
+                model:    state.model,
+                now:      now
+            )
             m.addItem(.separator())
             m.addPlain("\(l.updated) \(fmt(state.updatedAt))", size: 11, gray: true)
         } else {
@@ -874,6 +867,96 @@ extension NSMenu {
         val.alignment = .right
         val.frame = NSRect(x: 170, y: 2, width: 66, height: 18)
         view.addSubview(val)
+
+        item.view = view
+        addItem(item)
+    }
+
+    func addSplitPanel(fiveHour: Limit?, sevenDay: Limit?, costUSD: Double?, model: String?, now: Int) {
+        let item = NSMenuItem()
+        let panelWidth: CGFloat = 280
+        let panelHeight: CGFloat = 90
+        let view = NSView(frame: NSRect(x: 0, y: 0, width: panelWidth, height: panelHeight))
+
+        // Divider line
+        let divider = NSBox(frame: NSRect(x: panelWidth / 2, y: 8, width: 1, height: panelHeight - 16))
+        divider.boxType = .separator
+        view.addSubview(divider)
+
+        // — LEFT COLUMN: cost + model —
+        let leftX: CGFloat = 14
+        let costLabel = NSTextField(labelWithString: costUSD.map { formatCost($0) } ?? "--")
+        costLabel.font = .monospacedDigitSystemFont(ofSize: 20, weight: .bold)
+        costLabel.textColor = NSColor(calibratedRed: 0.627, green: 0.910, blue: 0.565, alpha: 1.0)
+        costLabel.frame = NSRect(x: leftX, y: panelHeight - 36, width: 120, height: 28)
+        view.addSubview(costLabel)
+
+        let allTimeLabel = NSTextField(labelWithString: "all-time cost")
+        allTimeLabel.font = .systemFont(ofSize: 10)
+        allTimeLabel.textColor = .tertiaryLabelColor
+        allTimeLabel.frame = NSRect(x: leftX, y: panelHeight - 52, width: 120, height: 16)
+        view.addSubview(allTimeLabel)
+
+        if let m = model, !m.isEmpty {
+            let shortModel = m.replacingOccurrences(of: "claude-", with: "")
+            let modelLabel = NSTextField(labelWithString: shortModel)
+            modelLabel.font = .systemFont(ofSize: 10)
+            modelLabel.textColor = NSColor(calibratedRed: 0.565, green: 0.533, blue: 0.667, alpha: 1.0)
+            modelLabel.frame = NSRect(x: leftX, y: 12, width: 120, height: 16)
+            view.addSubview(modelLabel)
+        }
+
+        // — RIGHT COLUMN: 5h + 7d rows —
+        let rightX: CGFloat = panelWidth / 2 + 12
+        let colW:   CGFloat = panelWidth / 2 - 20
+
+        func addUsageRow(label: String, limit: Limit?, yTop: CGFloat) {
+            let pct   = limit.map { effectiveUsedPercentage($0, now: now) } ?? 0
+            let color: NSColor = pct < 70
+                ? NSColor(calibratedRed: 0.298, green: 0.851, blue: 0.392, alpha: 1.0)
+                : pct < 90 ? .systemOrange : .systemRed
+
+            let lbl = NSTextField(labelWithString: label)
+            lbl.font = .systemFont(ofSize: 10, weight: .semibold)
+            lbl.textColor = .secondaryLabelColor
+            lbl.frame = NSRect(x: rightX, y: yTop - 14, width: 40, height: 13)
+            view.addSubview(lbl)
+
+            let pctLbl = NSTextField(labelWithString: limit != nil ? "\(pct)%" : "--")
+            pctLbl.font = .monospacedDigitSystemFont(ofSize: 13, weight: .semibold)
+            pctLbl.textColor = color
+            pctLbl.frame = NSRect(x: rightX + 42, y: yTop - 16, width: 40, height: 16)
+            view.addSubview(pctLbl)
+
+            // progress bar (custom drawn)
+            let barBg = NSView(frame: NSRect(x: rightX, y: yTop - 22, width: colW, height: 4))
+            barBg.wantsLayer = true
+            barBg.layer?.backgroundColor = NSColor.quaternaryLabelColor.cgColor
+            barBg.layer?.cornerRadius = 2
+            view.addSubview(barBg)
+
+            if limit != nil {
+                let fill = NSView(frame: NSRect(x: 0, y: 0, width: colW * CGFloat(pct) / 100, height: 4))
+                fill.wantsLayer = true
+                fill.layer?.backgroundColor = color.cgColor
+                fill.layer?.cornerRadius = 2
+                barBg.addSubview(fill)
+            }
+
+            if let lim = limit, let ts = lim.resetsAt {
+                let countdown = formatCountdown(ts, now: now)
+                if !countdown.isEmpty {
+                    let cdLbl = NSTextField(labelWithString: "⏰ \(countdown)")
+                    cdLbl.font = .systemFont(ofSize: 10)
+                    cdLbl.textColor = .tertiaryLabelColor
+                    cdLbl.frame = NSRect(x: rightX + 86, y: yTop - 15, width: 52, height: 13)
+                    view.addSubview(cdLbl)
+                }
+            }
+        }
+
+        addUsageRow(label: "5H", limit: fiveHour, yTop: panelHeight - 10)
+        addUsageRow(label: "7D", limit: sevenDay,  yTop: panelHeight - 50)
 
         item.view = view
         addItem(item)
