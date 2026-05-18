@@ -492,6 +492,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
         update()
     }
 
+    func syncStateToWidgetContainer(_ data: Data) {
+        let widgetContainer = homeDirectoryPath +
+            "/Library/Containers/com.miguelsosa.claude-usage-bar.widget/Data/.claude-usage-state.json"
+        try? data.write(to: URL(fileURLWithPath: widgetContainer), options: .atomic)
+    }
+
     func update() {
         let l = L.detect()
         if let btn = statusItem.button {
@@ -510,6 +516,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
         if let raw   = FileManager.default.contents(atPath: stateFile),
            let state = try? JSONDecoder().decode(UsageState.self, from: raw) {
 
+            syncStateToWidgetContainer(raw)
             if state.updatedAt != lastStateUpdatedAt {
                 lastStateUpdatedAt = state.updatedAt
                 WidgetCenter.shared.reloadAllTimelines()
