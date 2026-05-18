@@ -522,27 +522,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
 
             let pct5h = fh.map { effectiveUsedPercentage($0, now: now) }
             let pctStr = pct5h.map { "\($0)%" } ?? "--"
-            let costStr = state.totalCostUSD.map { formatCost($0) }
 
             if let btn = statusItem.button {
-                if let cost = costStr {
-                    let full = NSMutableAttributedString()
-                    let costColor = NSColor.labelColor
-                    let sepColor  = NSColor.secondaryLabelColor
-                    let usageColor: NSColor = {
-                        let p = pct5h ?? 0
-                        if p < 70 { return NSColor.systemGreen }
-                        if p < 90 { return NSColor.systemOrange }
-                        return NSColor.systemRed
-                    }()
-                    let font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium)
-                    full.append(NSAttributedString(string: " \(cost)", attributes: [.foregroundColor: costColor, .font: font]))
-                    full.append(NSAttributedString(string: "  │  ", attributes: [.foregroundColor: sepColor, .font: font]))
-                    full.append(NSAttributedString(string: "\(pctStr)\(stale)", attributes: [.foregroundColor: usageColor, .font: font]))
-                    btn.attributedTitle = full
-                } else {
-                    btn.title = " \(pctStr)\(stale)"
-                }
+                let usageColor: NSColor = {
+                    let p = pct5h ?? 0
+                    if p < 70 { return NSColor.systemGreen }
+                    if p < 90 { return NSColor.systemOrange }
+                    return NSColor.systemRed
+                }()
+                let font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium)
+                let full = NSMutableAttributedString(
+                    string: " \(pctStr)\(stale)",
+                    attributes: [.foregroundColor: usageColor, .font: font]
+                )
+                btn.attributedTitle = full
             }
 
             m.addSplitPanel(
