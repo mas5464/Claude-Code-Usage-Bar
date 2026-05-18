@@ -22,11 +22,15 @@ struct WRateLimits: Codable {
 }
 
 struct WUsageState: Codable {
-    let updatedAt: Int
-    let rateLimits: WRateLimits?
+    let updatedAt:    Int
+    let rateLimits:   WRateLimits?
+    let model:        String?
+    let totalCostUSD: Double?
     enum CodingKeys: String, CodingKey {
-        case updatedAt  = "updated_at"
-        case rateLimits = "rate_limits"
+        case updatedAt    = "updated_at"
+        case rateLimits   = "rate_limits"
+        case model        = "model"
+        case totalCostUSD = "total_cost_usd"
     }
 }
 
@@ -42,12 +46,14 @@ struct WStatusResponse: Codable {
 // MARK: — Timeline Entry
 
 struct UsageEntry: TimelineEntry {
-    let date: Date
-    let fiveHour: WLimit?
-    let sevenDay: WLimit?
-    let updatedAt: Int?
+    let date:            Date
+    let fiveHour:        WLimit?
+    let sevenDay:        WLimit?
+    let updatedAt:       Int?
     let claudeCodeStatus: String?
-    let claudeAPIStatus: String?
+    let claudeAPIStatus:  String?
+    let model:           String?
+    let totalCostUSD:    Double?
 }
 
 // MARK: — Timeline Provider
@@ -68,7 +74,9 @@ struct Provider: TimelineProvider {
             sevenDay: WLimit(usedPercentage: 45, resetsAt: nil),
             updatedAt: nil,
             claudeCodeStatus: "operational",
-            claudeAPIStatus: "operational"
+            claudeAPIStatus: "operational",
+            model: "sonnet-4-6",
+            totalCostUSD: 14118.0
         )
     }
 
@@ -95,7 +103,9 @@ struct Provider: TimelineProvider {
                 sevenDay: usage.sevenDay,
                 updatedAt: usage.updatedAt,
                 claudeCodeStatus: ccStatus,
-                claudeAPIStatus: apiStatus
+                claudeAPIStatus: apiStatus,
+                model: usage.model,
+                totalCostUSD: usage.totalCostUSD
             )
             let next = Calendar.current.date(byAdding: .minute, value: 15, to: Date())!
             completion(Timeline(entries: [entry], policy: .after(next)))
@@ -107,7 +117,8 @@ struct Provider: TimelineProvider {
               let state = try? JSONDecoder().decode(WUsageState.self, from: data)
         else {
             return UsageEntry(date: Date(), fiveHour: nil, sevenDay: nil,
-                              updatedAt: nil, claudeCodeStatus: nil, claudeAPIStatus: nil)
+                              updatedAt: nil, claudeCodeStatus: nil, claudeAPIStatus: nil,
+                              model: nil, totalCostUSD: nil)
         }
         return UsageEntry(
             date: Date(),
@@ -115,7 +126,9 @@ struct Provider: TimelineProvider {
             sevenDay: state.rateLimits?.sevenDay,
             updatedAt: state.updatedAt,
             claudeCodeStatus: claudeCodeStatus,
-            claudeAPIStatus: claudeAPIStatus
+            claudeAPIStatus: claudeAPIStatus,
+            model: state.model,
+            totalCostUSD: state.totalCostUSD
         )
     }
 }
@@ -150,6 +163,21 @@ func wResetLabel(_ limit: WLimit, now: Int = Int(Date().timeIntervalSince1970)) 
 func wUpdatedLabel(_ ts: Int) -> String {
     let f = DateFormatter(); f.timeStyle = .short; f.dateStyle = .none
     return f.string(from: Date(timeIntervalSince1970: TimeInterval(ts)))
+}
+
+func wFormatCost(_ usd: Double) -> String {
+    if usd >= 1_000_000 { return String(format: "$%.1fM", usd / 1_000_000) }
+    if usd >= 10_000    { return String(format: "$%.1fK", usd / 1_000) }
+    return "$\(Int(usd.rounded()))"
+}
+
+func wFormatCountdown(_ resetsAt: Int, now: Int = Int(Date().timeIntervalSince1970)) -> String {
+    let delta = resetsAt - now
+    guard delta > 0 else { return "" }
+    if delta < 60    { return "< 1m" }
+    if delta < 3600  { return "\(delta / 60)m" }
+    if delta < 86400 { return "\(delta / 3600)h \((delta % 3600) / 60)m" }
+    return "\(delta / 86400)d \((delta % 86400) / 3600)h"
 }
 
 // MARK: — Shared sub-views
@@ -250,38 +278,93 @@ struct NoDataView: View {
 
 // MARK: — Medium widget view
 
+struct CostColumnView: View {
+    let totalCostUSD: Double?
+    let model: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("COST")
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(.tertiary)
+                .textCase(Text.Case.uppercase)
+            Text(totalCostUSD.map { wFormatCost($0) } ?? "--")
+                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .foregroundStyle(Color(red: 0.627, green: 0.910, blue: 0.565))
+                .minimumScaleFactor(0.7)
+                .lineLimit(1)
+            Text("all-time")
+                .font(.system(size: 9))
+                .foregroundStyle(.tertiary)
+            Spacer()
+            if let m = model, !m.isEmpty {
+                Text(m.replacingOccurrences(of: "claude-", with: ""))
+                    .font(.system(size: 9))
+                    .foregroundStyle(Color(red: 0.565, green: 0.533, blue: 0.667))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+        }
+    }
+}
+
+struct CompactUsageRow: View {
+    let label: String
+    let limit: WLimit?
+
+    var body: some View {
+        let pct   = limit.map { wEffectivePct($0) } ?? 0
+        let color = limit != nil ? wColor(for: pct) : Color.secondary
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(label)
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .textCase(Text.Case.uppercase)
+                Spacer()
+                Text(limit != nil ? "\(pct)%" : "--")
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .foregroundStyle(color)
+                if let lim = limit, let ts = lim.resetsAt {
+                    let cd = wFormatCountdown(ts)
+                    if !cd.isEmpty {
+                        Text("⏰\(cd)")
+                            .font(.system(size: 9))
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+            }
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 2).fill(.quaternary).frame(height: 4)
+                    RoundedRectangle(cornerRadius: 2).fill(color)
+                        .frame(width: geo.size.width * CGFloat(pct) / 100, height: 4)
+                }
+            }
+            .frame(height: 4)
+        }
+    }
+}
+
 struct MediumWidgetView: View {
     let entry: UsageEntry
 
     var body: some View {
-        if entry.fiveHour == nil && entry.sevenDay == nil {
+        if entry.fiveHour == nil && entry.sevenDay == nil && entry.totalCostUSD == nil {
             NoDataView()
         } else {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack {
-                    Label("Claude Code", systemImage: "terminal")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    if let ts = entry.updatedAt {
-                        Text(wUpdatedLabel(ts))
-                            .font(.system(size: 10))
-                            .foregroundStyle(.tertiary)
-                    }
+            HStack(alignment: .top, spacing: 0) {
+                CostColumnView(totalCostUSD: entry.totalCostUSD, model: entry.model)
+                    .frame(maxWidth: .infinity)
+                Divider().padding(.horizontal, 10)
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("USAGE")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(.tertiary)
+                    CompactUsageRow(label: "5H", limit: entry.fiveHour)
+                    CompactUsageRow(label: "7D", limit: entry.sevenDay)
                 }
-                .padding(.bottom, 10)
-
-                HStack(alignment: .top, spacing: 14) {
-                    if let fh = entry.fiveHour {
-                        UsageRow(label: "5h Session", limit: fh)
-                    }
-                    if entry.fiveHour != nil && entry.sevenDay != nil {
-                        Divider()
-                    }
-                    if let sd = entry.sevenDay {
-                        UsageRow(label: "7d Weekly", limit: sd)
-                    }
-                }
+                .frame(maxWidth: .infinity)
             }
             .padding(14)
         }
@@ -298,10 +381,17 @@ struct LargeWidgetView: View {
             NoDataView()
         } else {
             VStack(alignment: .leading, spacing: 0) {
-                HStack {
-                    Label("Claude Code Usage", systemImage: "terminal")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(.secondary)
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Label("Claude Code Usage", systemImage: "terminal")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                        if let cost = entry.totalCostUSD {
+                            Text(wFormatCost(cost))
+                                .font(.system(size: 13, weight: .bold, design: .rounded))
+                                .foregroundStyle(Color(red: 0.627, green: 0.910, blue: 0.565))
+                        }
+                    }
                     Spacer()
                     if let ts = entry.updatedAt {
                         Text(wUpdatedLabel(ts))
