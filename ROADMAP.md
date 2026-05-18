@@ -22,7 +22,16 @@
 - [x] Weekly reset time display (day + time format)
 - [x] Session reset time display (hours + minutes format)
 
-### Phase 2 — Polish & Distribution
+### Phase 2 — Enhanced Display (Completed 2026-05-19)
+- [x] Accumulated all-time cost via JSONL scanner (CostScanner)
+- [x] Cost shown in dropdown split-panel (left column)
+- [x] Current model name in dropdown and widget
+- [x] Reset countdowns (5h and 7d) in dropdown and widget
+- [x] Progress bars in dropdown and widget
+- [x] Widget split-column layout (cost left, usage right)
+- [x] Adaptive system colors (readable in light + dark mode)
+
+### Phase 3 — Polish & Distribution
 - [ ] Notarized public release on GitHub
 - [ ] SwiftBar/xbar plugin parity with native app features
 - [ ] Auto-update mechanism or update check notification
