@@ -531,20 +531,35 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
                     return NSColor.systemRed
                 }()
                 let font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium)
-                let full = NSMutableAttributedString(
-                    string: " \(pctStr)\(stale)",
-                    attributes: [.foregroundColor: usageColor, .font: font]
-                )
+                let full = NSMutableAttributedString()
+                if let cost = state.totalCostUSD {
+                    full.append(NSAttributedString(string: " \(formatCost(cost)) ", attributes: [.foregroundColor: NSColor.labelColor, .font: font]))
+                }
+                full.append(NSAttributedString(string: " \(pctStr)\(stale)", attributes: [.foregroundColor: usageColor, .font: font]))
                 btn.attributedTitle = full
             }
 
-            m.addSplitPanel(
-                fiveHour: fh,
-                sevenDay: sd,
-                costUSD:  state.totalCostUSD,
-                model:    state.model,
-                now:      now
-            )
+            if let cost = state.totalCostUSD {
+                m.addRow("Total cost", value: formatCost(cost), symbol: "dollarsign.circle")
+                if let model = state.model, !model.isEmpty {
+                    m.addPlain(model.replacingOccurrences(of: "claude-", with: ""), size: 11, gray: true)
+                }
+                m.addItem(.separator())
+            }
+            if let f = fh {
+                m.addRow(l.session, value: "\(effectiveUsedPercentage(f, now: now))% \(l.used)", symbol: "clock")
+                if let ts = f.resetsAt {
+                    let rel = relativeReset(ts, now: now, l: l)
+                    if !rel.isEmpty { m.addPlain(rel, size: 11, gray: true) }
+                }
+            }
+            if let s = sd {
+                m.addRow(l.weekly, value: "\(effectiveUsedPercentage(s, now: now))% \(l.used)", symbol: "calendar")
+                if let ts = s.resetsAt {
+                    let rel = relativeReset(ts, now: now, l: l)
+                    if !rel.isEmpty { m.addPlain(rel, size: 11, gray: true) }
+                }
+            }
             m.addItem(.separator())
             m.addPlain("\(l.updated) \(fmt(state.updatedAt))", size: 11, gray: true)
         } else {
