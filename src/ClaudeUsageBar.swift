@@ -22,11 +22,15 @@ struct RateLimits: Codable {
     }
 }
 struct UsageState: Codable {
-    let updatedAt:  Int
-    let rateLimits: RateLimits?
+    let updatedAt:    Int
+    let rateLimits:   RateLimits?
+    let model:        String?
+    let totalCostUSD: Double?
     enum CodingKeys: String, CodingKey {
-        case updatedAt  = "updated_at"
-        case rateLimits = "rate_limits"
+        case updatedAt    = "updated_at"
+        case rateLimits   = "rate_limits"
+        case model        = "model"
+        case totalCostUSD = "total_cost_usd"
     }
 }
 
@@ -57,10 +61,21 @@ struct ClaudeStatus {
     }
 }
 
+struct ModelInfo: Codable {
+    let id: String?
+    let displayName: String?
+    enum CodingKeys: String, CodingKey {
+        case id          = "id"
+        case displayName = "display_name"
+    }
+}
+
 struct StatusLineInput: Codable {
     let rateLimits: RateLimits?
+    let model:      ModelInfo?
     enum CodingKeys: String, CodingKey {
         case rateLimits = "rate_limits"
+        case model      = "model"
     }
 }
 
@@ -138,7 +153,20 @@ func renderStatusLine() {
         print(output)
     }
 
-    let state = UsageState(updatedAt: Int(Date().timeIntervalSince1970), rateLimits: limits)
+    let modelID = payload.model?.id ?? payload.model?.displayName
+    // Preserve totalCostUSD written by CostScanner — JSONEncoder omits nil optionals,
+    // which would silently wipe the field on every statusline invocation.
+    var existingCostUSD: Double? = nil
+    if let existingData = try? Data(contentsOf: URL(fileURLWithPath: stateFilePath)),
+       let existingState = try? JSONDecoder().decode(UsageState.self, from: existingData) {
+        existingCostUSD = existingState.totalCostUSD
+    }
+    let state = UsageState(
+        updatedAt:    Int(Date().timeIntervalSince1970),
+        rateLimits:   limits,
+        model:        modelID,
+        totalCostUSD: existingCostUSD
+    )
     do {
         try FileManager.default.createDirectory(
             at: URL(fileURLWithPath: homeDirectoryPath + "/.claude"),
