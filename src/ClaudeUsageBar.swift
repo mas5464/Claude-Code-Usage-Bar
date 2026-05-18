@@ -354,6 +354,97 @@ struct L {
     }
 }
 
+// MARK: — Cost Scanner
+
+class CostScanner {
+    private let projectsDir: String
+    private let stateFile: String
+    private var workItem: DispatchWorkItem?
+
+    struct Pricing {
+        let input, cacheCreate, cacheRead, output: Double // USD per million tokens
+    }
+
+    private let pricingTable: [(match: String, rates: Pricing)] = [
+        ("opus-4",    Pricing(input: 15.00, cacheCreate: 18.75, cacheRead: 1.50, output: 75.00)),
+        ("sonnet-4",  Pricing(input:  3.00, cacheCreate:  3.75, cacheRead: 0.30, output: 15.00)),
+        ("haiku-4",   Pricing(input:  0.80, cacheCreate:  1.00, cacheRead: 0.08, output:  4.00)),
+        ("opus-3",    Pricing(input: 15.00, cacheCreate: 18.75, cacheRead: 1.50, output: 75.00)),
+        ("sonnet-3",  Pricing(input:  3.00, cacheCreate:  3.75, cacheRead: 0.30, output: 15.00)),
+        ("haiku-3",   Pricing(input:  0.25, cacheCreate:  0.30, cacheRead: 0.03, output:  1.25)),
+    ]
+    private let fallbackPricing = Pricing(input: 3.00, cacheCreate: 3.75, cacheRead: 0.30, output: 15.00)
+
+    init() {
+        projectsDir = homeDirectoryPath + "/.claude/projects"
+        stateFile   = stateFilePath
+    }
+
+    func pricing(for modelID: String) -> Pricing {
+        let m = modelID.lowercased()
+        return pricingTable.first { m.contains($0.match) }?.rates ?? fallbackPricing
+    }
+
+    func scan() {
+        workItem?.cancel()
+        let item = DispatchWorkItem { [weak self] in self?.doScan() }
+        workItem = item
+        DispatchQueue.global(qos: .background).async(execute: item)
+    }
+
+    private func doScan() {
+        let fm = FileManager.default
+        guard let enumerator = fm.enumerator(
+            at: URL(fileURLWithPath: projectsDir),
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        ) else { return }
+
+        var total = 0.0
+        var lastModel = ""
+
+        for case let url as URL in enumerator {
+            guard !(workItem?.isCancelled ?? true) else { return }
+            guard url.pathExtension == "jsonl" else { continue }
+            guard let lines = try? String(contentsOf: url, encoding: .utf8) else { continue }
+
+            for line in lines.split(separator: "\n", omittingEmptySubsequences: true) {
+                guard !(workItem?.isCancelled ?? true) else { return }
+                guard let data = line.data(using: .utf8),
+                      let obj  = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      obj["type"] as? String == "assistant",
+                      let msg  = obj["message"] as? [String: Any]
+                else { continue }
+
+                if let m = msg["model"] as? String, !m.isEmpty { lastModel = m }
+                guard let usage = msg["usage"] as? [String: Any] else { continue }
+
+                let p = pricing(for: lastModel)
+                let inp  = usage["input_tokens"]                   as? Double ?? Double(usage["input_tokens"]                   as? Int ?? 0)
+                let cc   = usage["cache_creation_input_tokens"]    as? Double ?? Double(usage["cache_creation_input_tokens"]    as? Int ?? 0)
+                let cr   = usage["cache_read_input_tokens"]        as? Double ?? Double(usage["cache_read_input_tokens"]        as? Int ?? 0)
+                let out  = usage["output_tokens"]                  as? Double ?? Double(usage["output_tokens"]                  as? Int ?? 0)
+                total += (inp * p.input + cc * p.cacheCreate + cr * p.cacheRead + out * p.output) / 1_000_000
+            }
+        }
+
+        guard !(workItem?.isCancelled ?? true) else { return }
+        mergeCostIntoStateFile(total)
+    }
+
+    private func mergeCostIntoStateFile(_ cost: Double) {
+        let url = URL(fileURLWithPath: stateFile)
+        var dict: [String: Any] = [:]
+        if let data = try? Data(contentsOf: url),
+           let obj  = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            dict = obj
+        }
+        dict["total_cost_usd"] = cost
+        guard let data = try? JSONSerialization.data(withJSONObject: dict, options: .sortedKeys) else { return }
+        try? data.write(to: url, options: .atomic)
+    }
+}
+
 // MARK: — App Delegate
 class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotificationCenterDelegate {
     var statusItem: NSStatusItem!
@@ -366,6 +457,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
     let statusFetchURL = URL(string: "https://status.claude.com/api/v2/summary.json")!
     var isFetchingStatus = false
     var lastStateUpdatedAt: Int = 0
+    let costScanner = CostScanner()
+    var costTimer: Timer?
 
     func applicationDidFinishLaunching(_ n: Notification) {
         setupStatus = configureClaudeStatusLine()
@@ -377,6 +470,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
             btn.title = " --"
         }
         update()
+        costScanner.scan()
+        costTimer = Timer.scheduledTimer(withTimeInterval: 600, repeats: true) { [weak self] _ in
+            self?.costScanner.scan()
+        }
         timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
             self?.update()
         }
