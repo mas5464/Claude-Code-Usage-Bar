@@ -121,13 +121,18 @@ func formatCountdown(_ resetsAt: Int, now: Int = Int(Date().timeIntervalSince197
     return "\(delta / 86400)d \((delta % 86400) / 3600)h"
 }
 
+private let _costFormatter: NumberFormatter = {
+    let f = NumberFormatter()
+    f.numberStyle = .decimal
+    f.maximumFractionDigits = 0
+    return f
+}()
+
 func formatCost(_ usd: Double) -> String {
     if usd >= 1_000_000 { return String(format: "$%.1fM", usd / 1_000_000) }
     if usd >= 10_000    { return String(format: "$%.1fK", usd / 1_000) }
-    let formatter = NumberFormatter()
-    formatter.numberStyle = .decimal
-    formatter.maximumFractionDigits = 0
-    return "$\(formatter.string(from: NSNumber(value: Int(usd))) ?? "\(Int(usd))")"
+    let rounded = Int(usd.rounded())
+    return "$\(_costFormatter.string(from: NSNumber(value: rounded)) ?? "\(rounded)")"
 }
 
 func renderStatusLine() {
