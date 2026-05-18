@@ -112,6 +112,24 @@ func effectiveUsedPercentage(_ limit: Limit, now: Int = Int(Date().timeIntervalS
     return Int(limit.usedPercentage)
 }
 
+func formatCountdown(_ resetsAt: Int, now: Int = Int(Date().timeIntervalSince1970)) -> String {
+    let delta = resetsAt - now
+    guard delta > 0 else { return "" }
+    if delta < 60       { return "< 1m" }
+    if delta < 3600     { return "\(delta / 60)m" }
+    if delta < 86400    { return "\(delta / 3600)h \((delta % 3600) / 60)m" }
+    return "\(delta / 86400)d \((delta % 86400) / 3600)h"
+}
+
+func formatCost(_ usd: Double) -> String {
+    if usd >= 1_000_000 { return String(format: "$%.1fM", usd / 1_000_000) }
+    if usd >= 10_000    { return String(format: "$%.1fK", usd / 1_000) }
+    let formatter = NumberFormatter()
+    formatter.numberStyle = .decimal
+    formatter.maximumFractionDigits = 0
+    return "$\(formatter.string(from: NSNumber(value: Int(usd))) ?? "\(Int(usd))")"
+}
+
 func renderStatusLine() {
     let inputData = FileHandle.standardInput.readDataToEndOfFile()
     guard !inputData.isEmpty,
